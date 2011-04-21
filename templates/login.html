@@ -1,0 +1,36 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="/site_media/resources/css/xtheme-access.css" />
+</head>
+{% block content %}
+
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+<title>~BitFlux~</title>
+</head>
+<body>
+<center>
+<H1>~BitFlux~</H1>
+</center>
+<form method="post" action="/accounts/login/">
+<table align="center">
+<tr>
+    <td>{{ form.username.label_tag }}</td>
+    <td>{{ form.username }}</td>
+</tr>
+<tr>
+    <td>{{ form.password.label_tag }}</td>
+    <td>{{ form.password }}</td>
+</tr>
+
+<tr>
+	<td ALIGN=RIGHT COLSPAN=2><input type="submit" value="login" /></td>
+</tr>
+</table>
+<input type="hidden" name="next" value="{{ next }}" />
+</form>
+
+{% endblock %}
+</body>
+</html>
