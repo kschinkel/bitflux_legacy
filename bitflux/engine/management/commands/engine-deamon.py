@@ -372,7 +372,7 @@ def startJob(job):
     local_path = job.local_directory + job.filename
     log_to_file("Starting job: "+URL+" Saving to local path: "+local_path)
     #ARGS = [settings.BINARY_CURL,'-u',settings.USERNAME+':'+settings.PASSWORD,'-k','-C','-',URL,'-o',local_path]
-    WGET_ARGS = ['wget','-c','-q','--user='+settings.USERNAME,'--settings.PASSWORD='+settings.PASSWORD,'--no-check-certificate',URL,'--output-document='+local_path]
+    WGET_ARGS = ['wget','-c','-q','--user='+settings.USERNAME,'--password='+settings.PASSWORD,'--no-check-certificate',URL,'--output-document='+local_path]
     process = subprocess.Popen(WGET_ARGS,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     return process.pid
     
