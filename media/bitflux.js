@@ -50,13 +50,12 @@ var mkNewDir = function(){
            }
         });
     }
-
-}
+};
 
 var delEntry = function(){
     var sel = fileBrowser.selModel.getSelected();
     if(sel != null){
-        title = "Remove Entry"
+        title = "Remove Entry";
         msg = "Are you sure you want to delete: " + sel.data.entryName.toString();
         Ext.Msg.confirm( "Remove Entry", msg,  function(btn){
             postData = 'rmEntry=' + CWD + sel.data.entryName.toString();
@@ -78,36 +77,20 @@ var delEntry = function(){
                 });
             }
         });
-
-        //('Name', 'Please enter your name:', function(btn, text){
-
-        /*Ext.Msg.show({
-            title: title,
-            msg: msg,
-            minWidth: 200,
-            modal: true,
-            //icon: Ext.Msg.INFO,
-            buttons: Ext.Msg.YESNO
-        });*/
     }
-
-    /*if(sel != null){
-        alert("Are you sure you want to delete: " + CWD + sel.data.entryName.toString() );
-    }*/
-}
+};
 
 var updateEngineStatus = function(){
 	var randomnumber=Math.floor(Math.random()*100);
 	$.getJSON('/enginestatus/?'+randomnumber, function(data) { 
-	//var array = JSON.parse(data);
-	if(data == 'up'){
-		Ext.getCmp('engineStatus').update(statusG);
-	}else{
-		Ext.getCmp('engineStatus').update(statusB);
-	}
-	
+        if(data == 'up'){
+            Ext.getCmp('engineStatus').update(statusG);
+        }else{
+            Ext.getCmp('engineStatus').update(statusB);
+        }
 	});
 };
+
 var updateAutoDLerStatus = function(){
 	if(Ext.getCmp('autoDLerPanel').isVisible()){
 		autoDLStore.reload();
@@ -121,58 +104,59 @@ var updateAutoDLerStatus = function(){
 			});
 	}
 };
+
 var rowSelModel = new Ext.grid.RowSelectionModel({
-					singleSelect:false,
-					listeners: {
-							rowselect: function(smObj, rowIndex, record) {
-									if(record.data.queue_id !=0){
-										//controlBar.items.get(8).enable();
-										Ext.getCmp('qUp').enable();
-									}else{
-										//controlBar.items.get(8).disable();
-										Ext.getCmp('qUp').disable();
-									}
-									if(record.data.queue_id < store.getTotalCount()-1){
-										//controlBar.items.get(9).enable();
-										Ext.getCmp('qDown').enable();
-									}else{
-										//controlBar.items.get(9).disable();
-										Ext.getCmp('qDown').disable();
-									}
-									if(record.data.status == 'Stopped'){
-										Ext.getCmp('startBtn').enable();
-										Ext.getCmp('stopBtn').disable();
-										//controlBar.items.get(3).enable();
-										//controlBar.items.get(4).disable();
-									}else if(record.data.status == 'Running'){
-										Ext.getCmp('startBtn').disable();
-										Ext.getCmp('stopBtn').enable();
-										//controlBar.items.get(3).disable();
-										//controlBar.items.get(4).enable();
-									}else{
-										Ext.getCmp('startBtn').disable();
-										Ext.getCmp('stopBtn').disable();
-									}
-								
-								if(selRecordList.indexOf(rowIndex) == -1){
-									selRecordList.push(rowIndex);
-								}	
-							},
-							rowdeselect : function(smObj, rowIndex, record) {
-								selRecordList.pop(rowIndex);
-							}
-					}
-				}),
+    singleSelect:false,
+    listeners: {
+        rowselect: function(smObj, rowIndex, record) {
+                if(record.data.queue_id !=0){
+                    //controlBar.items.get(8).enable();
+                    Ext.getCmp('qUp').enable();
+                }else{
+                    //controlBar.items.get(8).disable();
+                    Ext.getCmp('qUp').disable();
+                }
+                if(record.data.queue_id < store.getTotalCount()-1){
+                    //controlBar.items.get(9).enable();
+                    Ext.getCmp('qDown').enable();
+                }else{
+                    //controlBar.items.get(9).disable();
+                    Ext.getCmp('qDown').disable();
+                }
+                if(record.data.status == 'Stopped'){
+                    Ext.getCmp('startBtn').enable();
+                    Ext.getCmp('stopBtn').disable();
+                    //controlBar.items.get(3).enable();
+                    //controlBar.items.get(4).disable();
+                }else if(record.data.status == 'Running'){
+                    Ext.getCmp('startBtn').disable();
+                    Ext.getCmp('stopBtn').enable();
+                    //controlBar.items.get(3).disable();
+                    //controlBar.items.get(4).enable();
+                }else{
+                    Ext.getCmp('startBtn').disable();
+                    Ext.getCmp('stopBtn').disable();
+                }
+            
+            if(selRecordList.indexOf(rowIndex) == -1){
+                selRecordList.push(rowIndex);
+            }	
+        },
+        rowdeselect : function(smObj, rowIndex, record) {
+            selRecordList.pop(rowIndex);
+        }
+    }
+});
+
 updateDisplay = function() {
 	store.reload();
-	//engineStatus.reload();
 	updateEngineStatus();
 	updateAutoDLerStatus();
 };
+
 aNewDL = function(action){
 	var postData = "newDL&" +action+"&URL=" +escape(newDLBar.items.get(0).getValue());
     postData += "&withAutoRename=" + Ext.getCmp('autoRenameChkBox').getValue();
-	//newDLBar.items.get(0).setValue("");
 	Ext.getCmp('newDLtxtField').setValue("");
 	Ext.Ajax.request({
 	   url: '/',
@@ -180,7 +164,6 @@ aNewDL = function(action){
 	   params: postData,
 	   success: function(response, opts) {
 		  var obj = Ext.decode(response.responseText);
-		  //console.dir(obj);
 	   },
 	   failure: function(response, opts) {
 		  console.log('server-side failure with status code ' + response.status);
@@ -215,7 +198,7 @@ btnClicked = function(action){
 		  console.log('server-side failure with status code ' + response.status);
 	   }
 	});
-}
+};
 
 Ext.override(Ext.grid.GridView, {
     //Custom method to restore scrollTop functionality
@@ -228,173 +211,155 @@ Ext.override(Ext.grid.GridView, {
 
 Ext.onReady(function(){
     controlBar = new Ext.Toolbar({
-    region: 'south',
-    width:1000,
-    height:50,
-    items: [
-		{xtype:'label',
-			text: 'Engine Status:'	
-		},
-		{xtype:'tbtext',
-			id:'engineStatus',
-			text:''
-		},
-		'->',
-		{text: 'Clean Up',
-			width: 50,
-			height: 50,
-			disabled:false,
-			handler: function() {btnClicked('cleanup')}
-		},
-		'-'
-		,
-        {text: 'Start',
-			width: 50,
-			height: 50,
-			disabled:true,
-			id:'startBtn',
-			handler: function() {btnClicked('start')}
-		},
-		{text: 'Stop',
-			width: 50,
-			height: 50,
-			id:'stopBtn',
-			disabled:true,
-			handler: function() {btnClicked('stop')}
-		},
-		{text: 'Queue',
-			width: 50,
-			height: 50,
-			handler: function() {btnClicked('queue')}
-		},
-		'-',
-		{text: 'Delete',
-			width: 50,
-			height: 50,
-			handler: function() {btnClicked('delete')}
-		},
-		{boxLabel: 'With Data',
-			xtype: 'checkbox',
-			id: 'withDataChkBox',
-			checked: true
-		},
-		'-',
-		{xtype: 'tbbutton',
-			cls:'x-btn-text-icon',
-			icon :'/site_media/col-move-bottom.gif',
-			id:'qUp',
-			disabled:true,
-			handler: function() {btnClicked('up')}
-		},
-		{xtype: 'tbbutton',
-			cls:'x-btn-text-icon',
-			id:'qDown',
-			icon :'/site_media/col-move-top.gif',
-			disabled:true,
-			handler: function() {btnClicked('down')}
-		}
-    ]
-	});
-	newDLBar = new Ext.Toolbar({
-    region: 'north',
-    width:1000,
-	height:30,
-    items: [
-		{xtype: 'textfield',
-			id: 'newDLtxtField',
-			width:800
-		},
-        '-',
-		{boxLabel: 'Auto-Rename',
-			xtype: 'checkbox',
-			id: 'autoRenameChkBox',
-			checked: true
-		},
-        '-',
-		{text: 'Start',
-			disabled:false,
-			handler: function() {aNewDL('start')}
-		},
-		'-',
-		{text: 'Add Pause',
-			disabled:false,
-			handler: function() {aNewDL('pause')}
-		},
-		'-',
-		{text: 'Queue',
-			disabled:false,
-			handler: function() {aNewDL('queue')}
-		},
-		'-',
-		/*{text: 'Current Dir:',
-			disabled:true,
-			handler: function() {
-				dirStore.reload();
-				changeDir.show();
-			}
-		},
-		{xtype:'tbtext',
-			text: '',
-			id:'workingDir'
-		},*/
-    ]
-});
-	
-	store = new Ext.data.JsonStore({
+        region: 'south',
+        width:1000,
+        height:50,
+        items: [
+            {xtype:'label',
+                text: 'Engine Status:'	
+            },
+            {xtype:'tbtext',
+                id:'engineStatus',
+                text:''
+            },
+            '->',
+            {text: 'Clean Up',
+                width: 50,
+                height: 50,
+                disabled:false,
+                handler: function() {btnClicked('cleanup')}
+            },
+            '-'
+            ,
+            {text: 'Start',
+                width: 50,
+                height: 50,
+                disabled:true,
+                id:'startBtn',
+                handler: function() {btnClicked('start')}
+            },
+            {text: 'Stop',
+                width: 50,
+                height: 50,
+                id:'stopBtn',
+                disabled:true,
+                handler: function() {btnClicked('stop')}
+            },
+            {text: 'Queue',
+                width: 50,
+                height: 50,
+                handler: function() {btnClicked('queue')}
+            },
+            '-',
+            {text: 'Delete',
+                width: 50,
+                height: 50,
+                handler: function() {btnClicked('delete')}
+            },
+            {boxLabel: 'With Data',
+                xtype: 'checkbox',
+                id: 'withDataChkBox',
+                checked: true
+            },
+            '-',
+            {xtype: 'tbbutton',
+                cls:'x-btn-text-icon',
+                icon :'/site_media/col-move-bottom.gif',
+                id:'qUp',
+                disabled:true,
+                handler: function() {btnClicked('up')}
+            },
+            {xtype: 'tbbutton',
+                cls:'x-btn-text-icon',
+                id:'qDown',
+                icon :'/site_media/col-move-top.gif',
+                disabled:true,
+                handler: function() {btnClicked('down')}
+            }
+        ]
+    });
+
+    newDLBar = new Ext.Toolbar({
+        region: 'north',
+        width:1000,
+        height:30,
+        items: [
+            {xtype: 'textfield',
+                id: 'newDLtxtField',
+                width:800
+            },
+            '-',
+            {boxLabel: 'Auto-Rename',
+                xtype: 'checkbox',
+                id: 'autoRenameChkBox',
+                checked: true
+            },
+            '-',
+            {text: 'Start',
+                disabled:false,
+                handler: function() {aNewDL('start')}
+            },
+            '-',
+            {text: 'Add Pause',
+                disabled:false,
+                handler: function() {aNewDL('pause')}
+            },
+            '-',
+            {text: 'Queue',
+                disabled:false,
+                handler: function() {aNewDL('queue')}
+            },
+            '-'
+        ]
+    });
+        
+    store = new Ext.data.JsonStore({
         root: 'downloads',
         totalProperty: 'total',
-        //remoteSort: true,
-
         fields: [
             'filename', 'total_size','queue_id','status','dl_speed','progress','eta','pid'
         ],
 
-        // load using script tags for cross domain, if the data in on the same domain as
-        // this page, an HttpProxy would be better
         proxy: new Ext.data.HttpProxy({
-            //url: 'http://kyle-server/myview/?'
-			url: '/myview/?',
-			method: 'GET'
+            url: '/myview/?',
+            method: 'GET'
         }),
-		listeners: {
-			'load': {
-				fn: function(obj,row) {
-					rowSelModel.selectRows(selRecordList);
-				}
-			}
-		}
+        listeners: {
+            'load': {
+                fn: function(obj,row) {
+                    rowSelModel.selectRows(selRecordList);
+                }
+            }
+        }
     });
-	
-    store.setDefaultSort('queue_id', 'ASC'); //'ASC' or 'DESC'
+        
 
-	
-	dirStore = new Ext.data.JsonStore({
+
+        
+    dirStore = new Ext.data.JsonStore({
         root: 'dirList',
         totalProperty: 'total',
-        
         fields: [
             'entryName', 'isDir','size','date'
         ],
         sortInfo: {field: 'entryName', direction: 'ASC'},
-        // load using script tags for cross domain, if the data in on the same domain as
-        // this page, an HttpProxy would be better
         proxy: new Ext.data.HttpProxy({
-			//url: '/dirList/?currentDir='+currentDir,
-			url: '/dirList/?',
-			method: 'GET'
+            //url: '/dirList/?currentDir='+currentDir,
+            url: '/dirList/?',
+            method: 'GET'
         }),
-		listeners: {
-			'load':{
-				fn:function(obj,records,options ){
+        listeners: {
+            'load':{
+                fn:function(obj,records,options ){
                     split = CWD.split("/");
                     bar = tabs.getTopToolbar();
-                    bar.removeAll()
+                    bar.removeAll();
                     
                     bar.add({
                         xtype: "tbtext", 
                         text: "Current Directory:"
                     });
-                    full_path = "/"
+                    full_path = "/";
                     for( i = 0; i < split.length-1; i++){
                         label = split[i] + "/";
                         full_path += label;
@@ -420,10 +385,10 @@ Ext.onReady(function(){
                             }
                         });
                     }
-					//newDLBar.items.get(8).update(workingDir);
+                    //newDLBar.items.get(8).update(workingDir);
                     
                     bar.doLayout();
-					//Ext.getCmp('workingDir').update(workingDir);
+                    //Ext.getCmp('workingDir').update(workingDir);
                     
                     if (selectEntry != null){
                         var index = dirStore.findExact('entryName',selectEntry);                     
@@ -432,62 +397,59 @@ Ext.onReady(function(){
                         selectEntry = null;
                     }
 
-				}
-			},
+                }
+            },
             scope: this,
             delay: 100
-		}
+        }
     });
-    
-	//dirStore.reload();
-	
-	autoDLStore = new Ext.data.JsonStore({
+        
+        //dirStore.reload();
+        
+    autoDLStore = new Ext.data.JsonStore({
         root: 'autoDLList',
         totalProperty: 'total',
-
         fields: [
             'entryName',
-			'id',
-			'latest_season',
-			'latest_episode'
+            'id',
+            'latest_season',
+            'latest_episode'
         ],
 
-        // load using script tags for cross domain, if the data in on the same domain as
-        // this page, an HttpProxy would be better
         proxy: new Ext.data.HttpProxy({
-			url: '/autoDLList/?',
-			method: 'GET'
+            url: '/autoDLList/?',
+            method: 'GET'
         })
     });
-	
-	
-	fileBrowser = new Ext.grid.GridPanel({
+        
+        
+    fileBrowser = new Ext.grid.GridPanel({
         width:450,
         height:350,
         title:'File Browser',
-		region: 'center',
-		//collapsible : true,
+        region: 'center',
         store: dirStore,
         trackMouseOver:false,
         disableSelection:true,
-		selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
+        selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
         // grid columns
-        columns:[/*{header: "Dir?",
+        /*{header: "Dir?",
             dataIndex: 'isDir',
             sortable: true
         },*/
-		{
+        columns:[
+        {
             header: "Name",
             dataIndex: 'entryName',
             width: 450,
             sortable: true
         },
-		{header: "Size",
+        {header: "Size",
             dataIndex: 'size',
            // width: 100,
             sortable: true
         },
-		{header: "Date",
+        {header: "Date",
             dataIndex: 'date',
            // width: 100,
             sortable: true
@@ -497,167 +459,169 @@ Ext.onReady(function(){
         viewConfig: {
             forceFit:true
         },
-		// Listeners for clicking the rows
-		listeners: {
-			'rowdblclick':{
-				fn:function(obj,row,ev){
-					the_entry = obj.getStore().getAt(row);
-					if (the_entry.data.isDir == 'Y'){
-						param =  the_entry.data.entryName + "/";
+        // Listeners for clicking the rows
+        listeners: {
+            'rowdblclick':{
+                fn:function(obj,row,ev){
+                    the_entry = obj.getStore().getAt(row);
+                    if (the_entry.data.isDir == 'Y'){
+                        param =  the_entry.data.entryName + "/";
                         CWD += param;
                         dirStore.reload({
-							params: {
-								'currentDir': CWD
-							}
-						});
-					}else if(the_entry.data.isDir == 'P'){
-						var param = the_entry.data.entryName.substr(0,the_entry.data.entryName.lastIndexOf('/'));
-						param = param.substr(0,param.lastIndexOf('/')+1);
-						dirStore.reload({
-							params: {
-								'currentDir': param
-							}
-						});
-					}
-				},
-				scope:this,
-				delay:100
-			}
-		},
+                            params: {
+                                'currentDir': CWD
+                            }
+                        });
+                    }else if(the_entry.data.isDir == 'P'){
+                        var param = the_entry.data.entryName.substr(0,the_entry.data.entryName.lastIndexOf('/'));
+                        param = param.substr(0,param.lastIndexOf('/')+1);
+                        dirStore.reload({
+                            params: {
+                                'currentDir': param
+                            }
+                        });
+                    }
+                },
+                scope:this,
+                delay:100
+            }
+        },
         bbar: new Ext.Toolbar({
-			width:1000,
-			height:30,
-			items: [
-				{xtype: 'textfield',
-					value: 'New Folder',
-					id: 'mkDir',
-					width:200
-				},
-				{text: 'New Dir',
-					handler: mkNewDir
-				},
+            width:1000,
+            height:30,
+            items: [
+                {xtype: 'textfield',
+                    value: 'New Folder',
+                    id: 'mkDir',
+                    width:200
+                },
+                {text: 'New Dir',
+                    handler: mkNewDir
+                },
                 '-'
                 ,{text: 'Del Entry',
                     handler: delEntry
-				}
-				
-			]            
+                }
+                
+            ]            
         })
     });
-	
-	changeDir = new Ext.Window({
-		title: 'Change Directory',
-		plain: true,
-		height: 400,
-		width: 500,
-		closeable: true,
-		closeAction: 'hide',
-		items:  fileBrowser
-		/*items: new Ext.TabPanel({
-			border:false,
-			activeTab: 0,
-			autoHeight: true,
-			items: [
-				fileBrowser
-			]
-		})*/
-	});
-	autoDLStore.reload();
-	autoDLBrowser = new Ext.grid.GridPanel({
+        
+    changeDir = new Ext.Window({
+        title: 'Change Directory',
+        plain: true,
+        height: 400,
+        width: 500,
+        closeable: true,
+        closeAction: 'hide',
+        items:  fileBrowser
+        /*items: new Ext.TabPanel({
+            border:false,
+            activeTab: 0,
+            autoHeight: true,
+            items: [
+                fileBrowser
+            ]
+        })*/
+    });
+
+    autoDLStore.reload();
+
+    autoDLBrowser = new Ext.grid.GridPanel({
         width:350,
         height:350,
         title:'Auto DL Browser',
-		region: 'east',
-		collapsible : true,
-		collapsed : true,
+        region: 'east',
+        collapsible : true,
+        collapsed : true,
         store: autoDLStore,
         trackMouseOver:false,
         disableSelection:true,
-		id : 'autoDLerPanel',
-		selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
+        id : 'autoDLerPanel',
+        selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
 
         // grid columns
         columns:[{header: "Entry Name",
-			width:150,
+            width:150,
             dataIndex: 'entryName',
             sortable: true
         },
-		{header: "Last Season Dled",
+        {header: "Last Season Dled",
             dataIndex: 'latest_season',
             sortable: true
         },
-		{header: "Last Episode Dled",
+        {header: "Last Episode Dled",
             dataIndex: 'latest_episode',
             sortable: true
         }],
-		 bbar: new Ext.Toolbar({
-				width:1000,
-				height:30,
-				items: [
-					{text: 'Add',
-					handler: function() {
-						autoDLWindow.show();
-					}
-					},
-					{text: 'Remove',
-					handler: function(){
-						if( autoDLBrowser.selModel.hasSelection() ){
-							Ext.MessageBox.confirm("Confirm","Are you sure?", function(btn){
-								if(btn == 'yes'){
-									//rowSelModel.getSelections();
-									var selected = autoDLBrowser.selModel.getSelected();
-									var postData = "id="+selected.data.id.toString();
-									Ext.Ajax.request({
-										url: '/removeautodl/?',
-										method: 'POST',
-										params: postData,
-										success: function(response, opts) {
-										//autoDLStore.reload();
-										var obj = Ext.decode(response.responseText);
-											//console.dir(obj);
-										},
-										failure: function(response, opts) {
-											console.log('server-side failure with status code ' + response.status);
-										}
-									});
-									//autoDLStore.reload();
-									//console.log(postData);
-								}//end of 'yes' button clicked'
-							});
-						}
-					}
-					},
-					{text: 'Edit',
-					disabled:true //TODO: have not implemented edit yet, just delete and create it again
-					},
-					'->',
-					{xtype:'label',
-						text: 'Status:'	
-					},
-					{xtype:'tbtext',
-						id:'autoDLerStatus',
-						text:''
-					}
-				]
+        bbar: new Ext.Toolbar({
+            width:1000,
+            height:30,
+            items: [
+                {text: 'Add',
+                    handler: function() {
+                        autoDLWindow.show();
+                    }
+                },
+                {text: 'Remove',
+                handler: function(){
+                    if( autoDLBrowser.selModel.hasSelection() ){
+                        Ext.MessageBox.confirm("Confirm","Are you sure?", function(btn){
+                            if(btn == 'yes'){
+                                //rowSelModel.getSelections();
+                                var selected = autoDLBrowser.selModel.getSelected();
+                                var postData = "id="+selected.data.id.toString();
+                                Ext.Ajax.request({
+                                    url: '/removeautodl/?',
+                                    method: 'POST',
+                                    params: postData,
+                                    success: function(response, opts) {
+                                    //autoDLStore.reload();
+                                    var obj = Ext.decode(response.responseText);
+                                        //console.dir(obj);
+                                    },
+                                    failure: function(response, opts) {
+                                        console.log('server-side failure with status code ' + response.status);
+                                    }
+                                });
+                                //autoDLStore.reload();
+                                //console.log(postData);
+                            }//end of 'yes' button clicked'
+                        });
+                    }
+                }
+                },
+                {text: 'Edit',
+                disabled:true //TODO: have not implemented edit yet, just delete and create it again
+                },
+                '->',
+                {xtype:'label',
+                    text: 'Status:'	
+                },
+                {xtype:'tbtext',
+                    id:'autoDLerStatus',
+                    text:''
+                }
+            ]
         }),
-		listeners: {
-			'rowdblclick':{
-				fn:function(obj,row,ev){
-					the_entry = obj.getStore().getAt(row);
-					autoDLLogsStore.reload({
-						params: {
-							'id': the_entry.id
-						}
-					});
-					autoDLLogsWindow.show();
-				},
-				scope:this,
-				delay:100
-			}
-		}
-	});
-	
-	var autoDLLogsStore = new Ext.data.JsonStore({
+        listeners: {
+            'rowdblclick':{
+                fn:function(obj,row,ev){
+                    the_entry = obj.getStore().getAt(row);
+                    autoDLLogsStore.reload({
+                        params: {
+                            'id': the_entry.id
+                        }
+                    });
+                    autoDLLogsWindow.show();
+                },
+                scope:this,
+                delay:100
+            }
+        }
+    });
+        
+    var autoDLLogsStore = new Ext.data.JsonStore({
         root: 'autoDLLogs',
         totalProperty: 'total',
 
@@ -665,39 +629,36 @@ Ext.onReady(function(){
             'notes', 'ts','season_num','episode_num'
         ],
 
-        // load using script tags for cross domain, if the data in on the same domain as
-        // this page, an HttpProxy would be better
         proxy: new Ext.data.HttpProxy({
-			//url: '/dirList/?currentDir='+currentDir,
-			url: '/autoDLLog/?',
-			method: 'GET'
+            url: '/autoDLLog/?',
+            method: 'GET'
         })
     });
-	
-	var autoDLLogsPanel = new Ext.grid.GridPanel({
+        
+    var autoDLLogsPanel = new Ext.grid.GridPanel({
         width:450,
         height:350,
         title:'Auto DL Entry Logs',
-		region: 'center',
-		//collapsible : true,
+        region: 'center',
+        //collapsible : true,
         store: autoDLLogsStore,
         trackMouseOver:false,
         disableSelection:true,
-		selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
+        selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
         // grid columns
         columns:[{header: "Notes",
             dataIndex: 'notes',
             sortable: true
         },
-		{header: "Date/Time",
+        {header: "Date/Time",
             dataIndex: 'ts',
             sortable: true
         },
-		{header: "Season",
+        {header: "Season",
             dataIndex: 'season_num',
             sortable: true
         },
-		{header: "Episode",
+        {header: "Episode",
             dataIndex: 'episode_num',
             sortable: true
         }],
@@ -707,128 +668,126 @@ Ext.onReady(function(){
             forceFit:true
         }	
     });
-	
-	autoDLLogsWindow = new Ext.Window({
-		layout:'fit',
-		width:450,
-		height:320,
-		closeAction :'hide',
-		resizable: true,
-		closable:true,
-		border:false,
-	    plain:true,
+        
+    autoDLLogsWindow = new Ext.Window({
+        layout:'fit',
+        width:450,
+        height:320,
+        closeAction :'hide',
+        resizable: true,
+        closable:true,
+        border:false,
+        plain:true,
         xtype: 'container',
-        items:autoDLLogsPanel,
-		/*onHide:function(){
-			autoDLStore.reload();
-		}*/
-	});
-	
-	
-	//autoDLWindow = new Ext.Window({
-	var autoDLForm = new Ext.form.FormPanel({
-		title: 'Auto DL Entry',
-		id:'autoDLForm',
-		url:'/autodlnew/',
-		bodyStyle: 'padding:15px',
-		width: 350,
-		defaultType: 'textfield',
-		defaults: {
-			// applied to each contained item
-			width: 230,
-			msgTarget: 'side'
-		},
-		items: [
-				{fieldLabel: 'Name',
-				name: 'autoDL_name',
-				allowBlank: false,
-				labelSeparator: ':' // override labelSeparator layout config
-				},
-				{xtype:'numberfield',
-				fieldLabel: 'Season[0-999]; Currently does not increment',
-				name: 'autoDL_season_start',
-				width: 50,
-				allowBlank: false,
-				decimalPrecision : 0,
-				minValue:0,
-				maxValue:999,
-				labelSeparator: ':' // override labelSeparator layout config
-				},
-				{xtype:'numberfield',
-				fieldLabel: 'Episode Start From [0-999]; Will increment',
-				name: 'autoDL_episode_start',
-				width: 50,
-				allowBlank: false,
-				decimalPrecision : 0,
-				minValue:0,
-				maxValue:999,
-				labelSeparator: ':' // override labelSeparator layout config
-				}
-		],
-		validResponse:function(form, action) {
-			autoDLForm.getForm().reset();
-			autoDLWindow.hide();
-		},
-		buttons: [
-			{text: 'Submit',
-				handler:function(args){
-					autoDLForm.getForm().submit({scope:autoDLForm, success:autoDLForm.validResponse,failure:autoDLForm.validResponse});
-				}
-			
-			},
-			{text: 'Cancel',
-				handler:function(args){
-					autoDLForm.getForm().reset();
-					autoDLWindow.hide();
-				}
-			}
-		],
-		layoutConfig: {
-			labelSeparator: '~' // superseded by assignment below
-		},
-		// config options applicable to container when layout='form':
-		hideLabels: false,
-		labelAlign: 'left',   // or 'right' or 'top'
-		labelSeparator: '>>', // takes precedence over layoutConfig value
-		labelWidth: 150,       // defaults to 100
-		labelPad: 8         // defaults to 5, must specify labelWidth to be honored
-	});
+        items:autoDLLogsPanel
+        /*onHide:function(){
+            autoDLStore.reload();
+        }*/
+    });
+        
+    var autoDLForm = new Ext.form.FormPanel({
+        title: 'Auto DL Entry',
+        id:'autoDLForm',
+        url:'/autodlnew/',
+        bodyStyle: 'padding:15px',
+        width: 350,
+        defaultType: 'textfield',
+        defaults: {
+            // applied to each contained item
+            width: 230,
+            msgTarget: 'side'
+        },
+        items: [
+                {fieldLabel: 'Name',
+                name: 'autoDL_name',
+                allowBlank: false,
+                labelSeparator: ':' // override labelSeparator layout config
+                },
+                {xtype:'numberfield',
+                fieldLabel: 'Season[0-999]; Currently does not increment',
+                name: 'autoDL_season_start',
+                width: 50,
+                allowBlank: false,
+                decimalPrecision : 0,
+                minValue:0,
+                maxValue:999,
+                labelSeparator: ':' // override labelSeparator layout config
+                },
+                {xtype:'numberfield',
+                fieldLabel: 'Episode Start From [0-999]; Will increment',
+                name: 'autoDL_episode_start',
+                width: 50,
+                allowBlank: false,
+                decimalPrecision : 0,
+                minValue:0,
+                maxValue:999,
+                labelSeparator: ':' // override labelSeparator layout config
+                }
+        ],
+        validResponse:function(form, action) {
+            autoDLForm.getForm().reset();
+            autoDLWindow.hide();
+        },
+        buttons: [
+            {text: 'Submit',
+                handler:function(args){
+                    autoDLForm.getForm().submit({scope:autoDLForm, success:autoDLForm.validResponse,failure:autoDLForm.validResponse});
+                }
+            
+            },
+            {text: 'Cancel',
+                handler:function(args){
+                    autoDLForm.getForm().reset();
+                    autoDLWindow.hide();
+                }
+            }
+        ],
+        layoutConfig: {
+            labelSeparator: '~' // superseded by assignment below
+        },
+        // config options applicable to container when layout='form':
+        hideLabels: false,
+        labelAlign: 'left',   // or 'right' or 'top'
+        labelSeparator: '>>', // takes precedence over layoutConfig value
+        labelWidth: 150,       // defaults to 100
+        labelPad: 8         // defaults to 5, must specify labelWidth to be honored
+    });
 
-	autoDLWindow = new Ext.Window({
-		layout:'fit',
-		width:450,
-		height:320,
-		closeAction :'hide',
-		resizable: true,
-		closable:true,
-		border:false,
-	    plain:true,
+    autoDLWindow = new Ext.Window({
+        layout:'fit',
+        width:450,
+        height:320,
+        closeAction :'hide',
+        resizable: true,
+        closable:true,
+        border:false,
+        plain:true,
         xtype: 'container',
-        items:[autoDLForm],
-		/*onHide:function(){
-			autoDLStore.reload();
-		}*/
-	});
-	
+        items:[autoDLForm]
+        /*onHide:function(){
+            autoDLStore.reload();
+        }*/
+    });
+        
     // pluggable renders
-    function renderTopic(value, p, record){
+    /*function renderTopic(value, p, record){
         return String.format(
                 '<b><a href="http://extjs.com/forum/showthread.php?t={2}" target="_blank">{0}</a></b><a href="http://extjs.com/forum/forumdisplay.php?f={3}" target="_blank">{1} Forum</a>',
                 value, record.data.forumtitle, record.id, record.data.forumid);
     }
     function renderLast(value, p, r){
         return String.format('{0}<br/>by {1}', value.dateFormat('M j, Y, g:i a'), r.data['lastposter']);
-    }
+    }*/
 
     grid = new Ext.grid.GridPanel({
         width:1000,
         //height:500,
         title:'Downloads',
-		region: 'center',
+        region: 'center',
         store: store,
         trackMouseOver:false,
         disableSelection:true,
-		selModel: rowSelModel,
+        selModel: rowSelModel,
 
         // grid columns
         columns:[{
@@ -837,37 +796,37 @@ Ext.onReady(function(){
             width: 420,
             sortable: true
         },
-		{header: "Total Size",
+        {header: "Total Size",
             dataIndex: 'total_size',
             //width: 100,
             sortable: true
         },
-		{header: "Queue",
+        {header: "Queue",
             dataIndex: 'queue_id',
            // width: 100,
             sortable: true
         },
-		{header: "Status",
+        {header: "Status",
             dataIndex: 'status',
            // width: 100,
             sortable: true
         },
-		{header: "DL Speed",
+        {header: "DL Speed",
             dataIndex: 'dl_speed',
             //width: 100,
             sortable: true
         },
-		{header: "%",
+        {header: "%",
             dataIndex: 'progress',
             //width: 100,
             sortable: true
         },
-		{header: "ETA",
+        {header: "ETA",
             dataIndex: 'eta',
             //width: 100,
             sortable: true
         }/*,
-		{header: "PID",
+        {header: "PID",
             dataIndex: 'pid',
             sortable: true
         }*/],
@@ -886,7 +845,8 @@ Ext.onReady(function(){
             emptyMsg: "No downloads to display"
         })
     });
-    /*TRYING TO IMPLIMENT TABS*/
+
+
     tabs = new Ext.TabPanel({
         //renderTo: Ext.getBody(),
         region: 'center',
@@ -898,23 +858,19 @@ Ext.onReady(function(){
         viewConfig: {
             forceFit:true
         },
-		tbar: new Ext.Toolbar({
-			width:1000,
-			height:30,
-			items: [
-				{xtype:'tbtext',
+        tbar: new Ext.Toolbar({
+            width:1000,
+            height:30,
+            items: [
+                {xtype:'tbtext',
                     text: '',
                     id:'workingDir'
                 }
-			]            
+            ]            
         })
     });
-	//create the viewport to render everything
 
-    
-});
-
-
+});//End of ext.onReady()
 
 initialize = function() {
 	viewport = new Ext.Viewport({
@@ -942,6 +898,7 @@ initialize = function() {
 			}
 		}
     });
+
     Ext.Ajax.request({
 	   url: '/getCWD/?',
 	   method: 'POST',
@@ -962,9 +919,10 @@ initialize = function() {
 	});
     
     //CWD = "/";
+    store.setDefaultSort('queue_id', 'ASC'); //'ASC' or 'DESC'
+    
     tabs.setActiveTab(0);
 	store.load({params:{start:0, limit:20}});
-    //dirStore.setDefaultSort('entryName', 'ASC');
 	window.setInterval('updateDisplay()',1000);
 };
 
