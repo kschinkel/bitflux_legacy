@@ -4,6 +4,7 @@
  * licensing@extjs.com
  * http://www.extjs.com/license
  */
+
 var store;
 var engineStatus;
 var selRecordList = new Array();
@@ -23,10 +24,13 @@ var autoDLWindow;
 var autoDLLogsWindow;
 var tabs;
 var CWD;
+var selectEntry = null;
+
 
 var mkNewDir = function(){
 	var postData = "mkDir=" +Ext.getCmp('mkDir').getValue();
-	Ext.getCmp('mkDir').setValue("New Folder");
+    selectEntry = Ext.getCmp('mkDir').getValue();
+    Ext.getCmp('mkDir').setValue("New Folder");
 	Ext.Ajax.request({
 	   url: '/newdir/?',
 	   method: 'POST',
@@ -36,13 +40,19 @@ var mkNewDir = function(){
 		  	dirStore.reload({
                 params: {
                     'currentDir': CWD
-                }
+                }/*,
+                callback: function(){
+                    selectEntry = Ext.getCmp('mkDir').getValue();
+                    
+                    Ext.getCmp('mkDir').setValue("New Folder");
+                }*/
            });
 	   },
 	   failure: function(response, opts) {
 		  console.log('server-side failure with status code ' + response.status);
 	   }
 	});
+    
 
 }
 
@@ -166,6 +176,15 @@ btnClicked = function(action){
 	   }
 	});
 }
+
+Ext.override(Ext.grid.GridView, {
+    //Custom method to restore scrollTop functionality
+    scrollTop : function() {
+        this.scroller.dom.scrollTop = 0;
+        this.scroller.dom.scrollLeft = 0;
+    },
+    scrollToTop : Ext.emptyFn
+});
 
 Ext.onReady(function(){
     controlBar = new Ext.Toolbar({
@@ -312,11 +331,11 @@ Ext.onReady(function(){
 	dirStore = new Ext.data.JsonStore({
         root: 'dirList',
         totalProperty: 'total',
-
+        
         fields: [
             'entryName', 'isDir','size','date'
         ],
-
+        sortInfo: {field: 'entryName', direction: 'ASC'},
         // load using script tags for cross domain, if the data in on the same domain as
         // this page, an HttpProxy would be better
         proxy: new Ext.data.HttpProxy({
@@ -363,11 +382,20 @@ Ext.onReady(function(){
                     }
 					//newDLBar.items.get(8).update(workingDir);
                     
-                    
                     bar.doLayout();
 					//Ext.getCmp('workingDir').update(workingDir);
+                    
+                    if (selectEntry != null){
+                        var index = dirStore.findExact('entryName',selectEntry);                     
+                        fileBrowser.getSelectionModel().selectRow(index);               
+                        fileBrowser.getView().focusRow(index);
+                        selectEntry = null;
+                    }
+
 				}
-			}
+			},
+            scope: this,
+            delay: 100
 		}
     });
     
@@ -403,7 +431,6 @@ Ext.onReady(function(){
         trackMouseOver:false,
         disableSelection:true,
 		selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
-
         // grid columns
         columns:[/*{header: "Dir?",
             dataIndex: 'isDir',
@@ -893,7 +920,7 @@ initialize = function() {
     //CWD = "/";
     tabs.setActiveTab(0);
 	store.load({params:{start:0, limit:20}});
-    dirStore.setDefaultSort('entryName', 'ASC');
+    //dirStore.setDefaultSort('entryName', 'ASC');
 	window.setInterval('updateDisplay()',1000);
 };
 
