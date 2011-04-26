@@ -28,32 +28,72 @@ var selectEntry = null;
 
 
 var mkNewDir = function(){
-	var postData = "mkDir=" +Ext.getCmp('mkDir').getValue();
-    selectEntry = Ext.getCmp('mkDir').getValue();
-    Ext.getCmp('mkDir').setValue("New Folder");
-	Ext.Ajax.request({
-	   url: '/newdir/?',
-	   method: 'POST',
-	   params: postData,
-	   success: function(response, opts) {
-		  var obj = Ext.decode(response.responseText);
-		  	dirStore.reload({
-                params: {
-                    'currentDir': CWD
-                }/*,
-                callback: function(){
-                    selectEntry = Ext.getCmp('mkDir').getValue();
-                    
-                    Ext.getCmp('mkDir').setValue("New Folder");
-                }*/
-           });
-	   },
-	   failure: function(response, opts) {
-		  console.log('server-side failure with status code ' + response.status);
-	   }
-	});
-    
+    dirName = Ext.getCmp('mkDir').getValue();
+    if (dirName != "New Folder"){
+        var postData = "mkDir=" +dirName;
+        selectEntry = Ext.getCmp('mkDir').getValue();
+        Ext.getCmp('mkDir').setValue("New Folder");
+        Ext.Ajax.request({
+           url: '/newdir/?',
+           method: 'POST',
+           params: postData,
+           success: function(response, opts) {
+              var obj = Ext.decode(response.responseText);
+                dirStore.reload({
+                    params: {
+                        'currentDir': CWD
+                    }
+               });
+           },
+           failure: function(response, opts) {
+              console.log('server-side failure with status code ' + response.status);
+           }
+        });
+    }
 
+}
+
+var delEntry = function(){
+    var sel = fileBrowser.selModel.getSelected();
+    if(sel != null){
+        title = "Remove Entry"
+        msg = "Are you sure you want to delete: " + sel.data.entryName.toString();
+        Ext.Msg.confirm( "Remove Entry", msg,  function(btn){
+            postData = 'rmEntry=' + CWD + sel.data.entryName.toString();
+            if (btn == 'yes'){
+                Ext.Ajax.request({
+                   url: '/rmEntry/?',
+                   method: 'POST',
+                   params: postData,
+                   success: function(response, opts) {
+                        dirStore.reload({
+                            params: {
+                                'currentDir': CWD
+                            }
+                       });
+                   },
+                   failure: function(response, opts) {
+                      console.log('server-side failure with status code ' + response.status);
+                   }
+                });
+            }
+        });
+
+        //('Name', 'Please enter your name:', function(btn, text){
+
+        /*Ext.Msg.show({
+            title: title,
+            msg: msg,
+            minWidth: 200,
+            modal: true,
+            //icon: Ext.Msg.INFO,
+            buttons: Ext.Msg.YESNO
+        });*/
+    }
+
+    /*if(sel != null){
+        alert("Are you sure you want to delete: " + CWD + sel.data.entryName.toString() );
+    }*/
 }
 
 var updateEngineStatus = function(){
@@ -495,6 +535,10 @@ Ext.onReady(function(){
 				},
 				{text: 'New Dir',
 					handler: mkNewDir
+				},
+                '-'
+                ,{text: 'Del Entry',
+                    handler: delEntry
 				}
 				
 			]            

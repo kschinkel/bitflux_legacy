@@ -275,7 +275,7 @@ def format_movie(raw_name):
     raw_name = raw_name.replace('.',' ')
     parts = raw_name.split(' ')
     #https://dl.vpnhub.ca/downloads/The.Super.2011.DvDScr.XviD.AC3-XtremE/The.Super.2011.DvDScr.XviD.AC3-XtremE.avi
-    common_tags = ['720p','1080p','1080i',
+    common_tags = [ '480p','720p','1080p','1080i',
                     'xvid','ac3','brrip','bdrip','bluray','dvdrip',
                     'cd','dvd','dvd9','r5','r4','r3','ts','cam','dvdscr',
                     'dvdscreener','vhsscreener','ppvrip','iflix',

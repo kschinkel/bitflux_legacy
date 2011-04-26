@@ -25,6 +25,7 @@ import time
 import ctypes
 import sys
 import os
+import shutil
 from HTMLParser import HTMLParser
 from datetime import datetime, timedelta
 
@@ -334,6 +335,22 @@ def newdir(request):
         value = 'Invalid DIR!'
     return HttpResponse(json.dumps(value),mimetype="application/json")
 
+@login_required
+def removeEntry(request):
+    entry = request.POST.get('rmEntry')
+    entry = settings.LOCAL_DIR.rstrip('/') + entry
+    if dir is not None and dir !='':
+        try:
+            os.remove(entry)
+        except OSError:
+            try:
+                shutil.rmtree(entry)
+            except OSError:
+                return HttpResponse(json.dumps("Unable to remove entry: " + entry),mimetype="application/json")
+        value = 'Removed Entry: ' + entry
+    else:
+        value = 'Invalid Entry name'
+    return HttpResponse(json.dumps(value),mimetype="application/json")
     
 @login_required
 def listAutoDLs(request):
