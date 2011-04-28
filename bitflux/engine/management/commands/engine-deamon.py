@@ -503,6 +503,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         print "Now running... View",settings.ENGINE_LOG,"for more information"
         while(1):
-            runEngine()
-            time.sleep(1)
+            try:
+                runEngine()
+                time.sleep(1)
+            except Exception,e:
+                log_to_file(str(e))
+                
         

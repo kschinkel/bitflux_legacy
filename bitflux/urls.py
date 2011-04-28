@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import *
+from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -25,5 +26,8 @@ urlpatterns = patterns('',
     (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
     {'document_root': '/var/www/bitflux/media'}),
     (r'^media/(?P<path>.*)$', 'django.views.static.serve',
-    {'document_root': '/var/www/bitflux/media/admin_media'})
+    {'document_root': '/var/www/bitflux/media/admin_media'}),
+    (r'^download/(?P<path>.*)$', 'django.views.static.serve',
+    {'document_root': settings.LOCAL_DIR})
+    
 )

@@ -25,7 +25,7 @@ var autoDLLogsWindow;
 var tabs;
 var CWD;
 var selectEntry = null;
-
+var canChangeDir = true;
 
 var mkNewDir = function(){
     dirName = Ext.getCmp('mkDir').getValue();
@@ -147,6 +147,15 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
         }
     }
 });
+
+var createLinkForDL = function(value, metaData, record) {
+    if(record.get('isDir') == 'N') {
+        path = "download" + CWD +record.get('entryName') ;
+        return '<a href="'+path+'" style="color:#ffffff; text-decoration: none">'+record.get('entryName')+'</a>';
+    }else{
+        return record.get('entryName');
+    }
+};
 
 updateDisplay = function() {
 	store.reload();
@@ -350,7 +359,8 @@ Ext.onReady(function(){
         }),
         listeners: {
             'load':{
-                fn:function(obj,records,options ){
+                fn:function(obj,records,options ){     
+                    
                     split = CWD.split("/");
                     bar = tabs.getTopToolbar();
                     bar.removeAll();
@@ -369,15 +379,18 @@ Ext.onReady(function(){
                             listeners: {
                                 'click': {
                                     fn:  function(obj) {
-                                        path = obj.getId();
-                                        path = path.substr(1);
-                                        //bytehive.files.selectByButton(obj);
-                                        CWD = path;
-                                        dirStore.reload({
-                                            params: {
-                                                'currentDir': path
-                                            }
-                                        });
+                                        if(canChangeDir){
+                                            path = obj.getId();
+                                            path = path.substr(1);
+                                            //bytehive.files.selectByButton(obj);
+                                            CWD = path;
+                                            canChangeDir = false;
+                                            dirStore.reload({
+                                                params: {
+                                                    'currentDir': path
+                                                }
+                                            });
+                                        }
                                     },
                                     scope: this,
                                     delay: 100
@@ -388,6 +401,7 @@ Ext.onReady(function(){
                     //newDLBar.items.get(8).update(workingDir);
                     
                     bar.doLayout();
+                    canChangeDir = true;
                     //Ext.getCmp('workingDir').update(workingDir);
                     
                     if (selectEntry != null){
@@ -441,6 +455,7 @@ Ext.onReady(function(){
         {
             header: "Name",
             dataIndex: 'entryName',
+            renderer : createLinkForDL,
             width: 450,
             sortable: true
         },
@@ -464,9 +479,10 @@ Ext.onReady(function(){
             'rowdblclick':{
                 fn:function(obj,row,ev){
                     the_entry = obj.getStore().getAt(row);
-                    if (the_entry.data.isDir == 'Y'){
+                    if (the_entry.data.isDir == 'Y' && canChangeDir){
                         param =  the_entry.data.entryName + "/";
                         CWD += param;
+                        canChangeDir = false;
                         dirStore.reload({
                             params: {
                                 'currentDir': CWD
