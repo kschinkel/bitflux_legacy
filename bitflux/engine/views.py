@@ -169,7 +169,8 @@ def myview(request):
                     'dl_speed' : display_dl_speed,
                     'progress' : a_job.progress,
                     'eta' : a_job.eta,
-                    'pid' : a_job.process_pid
+                    'pid' : a_job.process_pid,
+                    'nid'  : a_job.id
                     }
         objList.append(a_obj)
         

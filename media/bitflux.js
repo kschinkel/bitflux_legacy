@@ -137,10 +137,9 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
                     Ext.getCmp('startBtn').disable();
                     Ext.getCmp('stopBtn').disable();
                 }
-            
             if(selRecordList.indexOf(rowIndex) == -1){
                 selRecordList.push(rowIndex);
-            }	
+            }
         },
         rowdeselect : function(smObj, rowIndex, record) {
             selRecordList.pop(rowIndex);
@@ -327,7 +326,7 @@ Ext.onReady(function(){
         root: 'downloads',
         totalProperty: 'total',
         fields: [
-            'filename', 'total_size','queue_id','status','dl_speed','progress','eta','pid'
+            'filename', 'total_size','queue_id','status','dl_speed','progress','eta','pid', 'nid'
         ],
 
         proxy: new Ext.data.HttpProxy({
@@ -380,18 +379,16 @@ Ext.onReady(function(){
                             listeners: {
                                 'click': {
                                     fn:  function(obj) {
-                                        if(canChangeDir){
-                                            path = obj.getId();
-                                            path = path.substr(1);
-                                            //bytehive.files.selectByButton(obj);
-                                            CWD = path;
-                                            canChangeDir = false;
-                                            dirStore.reload({
-                                                params: {
-                                                    'currentDir': path
-                                                }
-                                            });
-                                        }
+                                        path = obj.getId();
+                                        path = path.substr(1);
+                                        //bytehive.files.selectByButton(obj);
+                                        CWD = path;
+                                        canChangeDir = false;
+                                        dirStore.reload({
+                                            params: {
+                                                'currentDir': path
+                                            }
+                                        });
                                     },
                                     scope: this,
                                     delay: 100
@@ -808,7 +805,11 @@ Ext.onReady(function(){
 
         // grid columns
         columns:[{
-            header: "Filename",
+            header: "NID",
+            dataIndex: 'nid',
+            sortable: true
+        },
+        {header: "Filename",
             dataIndex: 'filename',
             width: 420,
             sortable: true
