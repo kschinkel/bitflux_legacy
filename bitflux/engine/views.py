@@ -386,6 +386,17 @@ def getCWD(request):
     return HttpResponse(json.dumps(dir))
     
 @login_required
+def download(request):
+    path = request.GET.get('downloadpath')
+    path = settings.LOCAL_DIR + path
+    file_list = path.split('/')
+    filename = file_list.pop();
+    response = HttpResponse(open(path))
+    response['Content-Disposition'] = 'attachment; filename='+filename
+    response['Content-Length'] = os.path.getsize(path)
+    return response
+    
+@login_required
 def listDirContents(request):
     objList = []
     currentDir = request.GET.get('currentDir')

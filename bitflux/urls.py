@@ -19,6 +19,7 @@ urlpatterns = patterns('',
     (r'^getCWD/$', 'bitflux.engine.views.getCWD'),
 	(r'^newdir/$', 'bitflux.engine.views.newdir'),
     (r'^rmEntry/$', 'bitflux.engine.views.removeEntry'),
+    (r'^download/$', 'bitflux.engine.views.download'),
 	#(r'^newDL/myview/?$', 'bitflux.engine.views.myview'),
 	#(r'^newDL/', 'bitflux.engine.views.newDL'),
 	(r'^accounts/login/$', "django.contrib.auth.views.login", 
@@ -26,8 +27,5 @@ urlpatterns = patterns('',
     (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
     {'document_root': '/var/www/bitflux/media'}),
     (r'^media/(?P<path>.*)$', 'django.views.static.serve',
-    {'document_root': '/var/www/bitflux/media/admin_media'}),
-    (r'^download/(?P<path>.*)$', 'django.views.static.serve',
-    {'document_root': settings.LOCAL_DIR})
-    
+    {'document_root': '/var/www/bitflux/media/admin_media'})
 )

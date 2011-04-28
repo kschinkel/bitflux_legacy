@@ -150,7 +150,8 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
 
 var createLinkForDL = function(value, metaData, record) {
     if(record.get('isDir') == 'N') {
-        path = "download" + CWD +record.get('entryName') ;
+        //path = "download" + CWD +record.get('entryName') ;
+        path =  "download/?downloadpath=" + CWD +record.get('entryName');
         return '<a href="'+path+'" style="color:#ffffff; text-decoration: none">'+record.get('entryName')+'</a>';
     }else{
         return record.get('entryName');
