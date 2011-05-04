@@ -182,7 +182,7 @@ def loadDirectory(job):
         elif status.endswith('Start'):
             status = 'Starting...'
         
-
+        filename = unicode(filename, errors='ignore')
         new_job.status = status
         new_job.queue_id = len(Job.objects.all())
         new_job.process_pid = -1
@@ -196,7 +196,7 @@ def loadDirectory(job):
         new_job.full_url = full_dl_path
         new_job.local_directory = local_dir
         new_job.filename = filename 
-        new_job.notes = "CURL download: " + new_job.local_directory + new_job.filename
+        new_job.notes = "CURL download: " + new_job.local_directory + filename
         new_job.progress = 0;
         new_job.eta = "";
         new_job.save()
@@ -399,11 +399,11 @@ def runEngine():
             elif a_job.autorename:
                 show_name = is_tv_show(a_job.filename)
                 if len(show_name) > 0:
-                   a_job.filename = show_name
+                   a_job.filename = unicode(show_name, errors='ignore')
                 else:
                     movie_name = is_movie(a_job.filename)
                     if len(movie_name) > 0:
-                            a_job.filename = movie_name
+                            a_job.filename = unicode(movie_name, errors='ignore') 
                     '''else:
                         parent_dir = urllib.unquote(parent_dir)
                         movie_name = is_movie(parent_dir)
