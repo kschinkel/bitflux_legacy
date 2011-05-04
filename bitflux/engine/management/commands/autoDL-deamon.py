@@ -44,7 +44,7 @@ def get_espisode_info(name, season, episode):
     if mvals['port'] is None:
         mvals['port'] = 80
     try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'])
+        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
         conn.request('GET',mvals['path'],"");
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
@@ -119,7 +119,7 @@ def getContentLength(URL):
     encoded = basic_auth.encode("base64")[:-1]
     headers = {"Authorization":"Basic %s" % encoded}
     params = ""
-    conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
+    conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
     conn.request('GET',mvals['path'],params,headers);
     responce = conn.getresponse()
     size = responce.getheader("content-length")
@@ -129,7 +129,7 @@ def getContentLength(URL):
 def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir):
     size, notused = getContentLength(url)
     #out = dl_dir + filename
-    
+    filename = unicode(filename, errors='ignore')
     #Create the new Job
     new_job = Job()
     new_job.status = 'Queued'
@@ -145,7 +145,7 @@ def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir):
     new_job.full_url = url
     new_job.local_directory = dl_dir
     new_job.filename = filename
-    new_job.notes = "Auto DLed:  " + new_job.local_directory + new_job.filename
+    new_job.notes = "Auto DLed:  " + new_job.local_directory + filename
     new_job.progress = 0;
     new_job.eta = ""
     new_job.save()
@@ -255,7 +255,7 @@ def dl_server_feed(URL):
         encoded = basic_auth.encode("base64")[:-1]
         headers = {"Authorization":"Basic %s" % encoded}
         params = ""
-        conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
+        conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
         conn.request('GET',mvals['path'],params,headers);
         thepage = conn.getresponse().read()
         result = json.loads(thepage) #parse the json page

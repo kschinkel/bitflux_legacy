@@ -221,8 +221,8 @@ def get_espisode_info(name, season, episode):
         fullhtmlpage = responce.read()
         conn.close()
     except Exception,e:
-        print "get_espisode_info: Failed to retrieve show name using URL: " + full_URL
-        print "get_espisode_info: Exception was value: " + str(e)
+        log_to_file("get_espisode_info: Failed to retrieve show name using URL: " + full_URL)
+        log_to_file("get_espisode_info: Exception was value: " + str(e))
         return "" , ""
         
     start_episode_info =  fullhtmlpage.find("Episode Info")
@@ -301,14 +301,14 @@ def is_movie(raw_name):
         mvals['port'] = 80
     fullhtmlpage = ""
     try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'])
+        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
         conn.request('GET',mvals['path'],"");
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
         conn.close()
     except Exception,e:
-        print "get_espisode_info: Failed to retrieve show name using URL: " + api_url
-        print "get_espisode_info: Exception was value: " + str(e)
+        log_to_file("get_espisode_info: Failed to retrieve show name using URL: " + api_url)
+        log_to_file("get_espisode_info: Exception was value: " + str(e))
         return ""
     
     result = json.loads(fullhtmlpage)
@@ -391,6 +391,7 @@ def runEngine():
 
     for a_job in Job.objects.all().order_by('queue_id'):
         if a_job.status.startswith('New'):
+            log_to_file('new job found')
             if a_job.full_url.endswith('/'):
                 #load directory
                 loadDirectory(a_job)
@@ -414,15 +415,15 @@ def runEngine():
             a_job.total_size = getContentLength(a_job.full_url)
             a_job.display_size = convert_bytes(a_job.total_size)
             a_job.save()
-            if a_job.status.endswith('Queue'):
-                a_job.status = 'Queued'
-                a_job.save()
-            elif a_job.status.endswith('Stop'):
-                a_job.status = 'Stopped'
-                a_job.save()
-            elif a_job.status.endswith('Start'):
-                a_job.status = 'Starting...'
-                a_job.save()
+        if a_job.status.endswith('Queue'):
+            a_job.status = 'Queued'
+            a_job.save()
+        elif a_job.status.endswith('Stop'):
+            a_job.status = 'Stopped'
+            a_job.save()
+        elif a_job.status.endswith('Start'):
+            a_job.status = 'Starting...'
+            a_job.save()
         
     for a_job in Job.objects.all().order_by('queue_id'):
     
@@ -458,7 +459,7 @@ def runEngine():
             else:
                 log_to_file("Cannot find file: "+a_job.local_directory + a_job.filename+" to compute stats for")
 
-        if a_job.progress ==100 and a_job.status !='Finished' and a_job.status != 'Deleting...':
+        if a_job.progress ==100 and a_job.status !='Finished' and a_job.status != 'Deleting...' and a_job.status != 'Deleting With Data...':
             a_job.status = 'Finished'
             a_job.dl_speed=0
             a_job.process_pid=-1
@@ -503,10 +504,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         print "Now running... View",settings.ENGINE_LOG,"for more information"
         while(1):
-            try:
-                runEngine()
-                time.sleep(1)
-            except Exception,e:
-                log_to_file(str(e))
+            #try:
+            runEngine()
+            time.sleep(1)
+            #except Exception,e:
+             #   log_to_file(str(e))
                 
         
