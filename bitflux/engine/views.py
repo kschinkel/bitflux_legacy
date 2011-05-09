@@ -250,17 +250,20 @@ def index(request):
             return HttpResponse(Context( {'action_performed':the_action,'list':returnlist} ))
             
         elif 'up' in request.POST:
-            up_id = request.POST.get('up')
-            if int(up_id) != 0:
-                job1 = Job.objects.get(queue_id=int(up_id))
+            nid = request.POST.get('up')   
+            if int(nid) != 0:
+                job1 = Job.objects.get(id=int(nid))
+                prev_id = job1.queue_id
                 job1.queue_id = job1.queue_id -1
-                job2 = Job.objects.get(queue_id=int(up_id)-1)
+                job2 = Job.objects.get(queue_id=prev_id-1)
                 job2.queue_id = job2.queue_id +1
                 job1.save()
                 job2.save()
             
         elif 'down' in request.POST:
-            down_id = request.POST.get('down')
+            nid = request.POST.get('down')
+            selected = Job.objects.get(id=int(nid))
+            down_id = selected.queue_id
             if int(down_id) != len(Job.objects.all())-1:
                 job1 = Job.objects.get(queue_id=int(down_id))
                 job1.queue_id = job1.queue_id +1
