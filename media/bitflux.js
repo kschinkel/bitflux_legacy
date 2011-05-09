@@ -184,7 +184,7 @@ btnClicked = function(action){
 	var selected = rowSelModel.getSelections();
 	var postData = "";
 	for ( var i=0;i<selected.length; ++i ){
-		postData = postData + action+ "="+selected[i].data.queue_id.toString() + "&";
+		postData = postData + action+ "="+selected[i].data.nid.toString() + "&";
 	}
 	postData = "Action&" + postData;
 	

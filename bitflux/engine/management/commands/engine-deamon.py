@@ -175,8 +175,11 @@ def runEngine():
     num_dls_at_once = 1
     num_dls = 0
     tobeDel = []
-
+    reorder =0 
     for a_job in Job.objects.all().order_by('queue_id'):
+        a_job.queue_id = reorder
+        a_job.save()
+        reorder += 1
         if a_job.status.startswith('New'):
             log_to_file('new job found')
             if a_job.full_url.endswith('/'):
@@ -270,14 +273,15 @@ def runEngine():
         
         elif a_job.status == 'Deleting...' or a_job.status == 'Deleting With Data...':
             killJob(a_job.process_pid)
-            tobeDel.append(a_job)
+            #tobeDel.append(a_job)
             if a_job.status == 'Deleting With Data...':
                 try:
                     os.remove(a_job.local_directory + a_job.filename)
                 except OSError:
                     if a_job.dled_size != 0:
                         log_to_file("Could not remove data for file: " + a_job.local_directory + a_job.filename)
-                    
+            log_to_file("Deleting: " + a_job.filename)
+            a_job.delete()        
         elif a_job.status == 'Running':
             num_dls = num_dls +1
         elif a_job.status == "Queued" and num_dls < num_dls_at_once:
@@ -285,7 +289,7 @@ def runEngine():
             a_job.status = "Running"
             a_job.save()
             num_dls = num_dls +1
-    deleteJobs(tobeDel)
+    #deleteJobs(tobeDel)
 
 class Command(BaseCommand):
     args = '<poll_id poll_id ...>'

@@ -278,17 +278,17 @@ def index(request):
             
             
             for a_check in check_list_queue:
-                a_job = Job.objects.get(queue_id=int(a_check))
+                a_job = Job.objects.get(id=int(a_check))
                 a_job.status = "Queued"
                 a_job.save()
             for a_check in check_list_stop:
                 the_action="Stopped";
-                a_job = Job.objects.get(queue_id=int(a_check))
+                a_job = Job.objects.get(id=int(a_check))
                 returnlist.append(int(a_check))
                 a_job.status = "Stopping...";
                 a_job.save();        
             for a_check in check_list_del:
-                a_job = Job.objects.get(queue_id=int(a_check))
+                a_job = Job.objects.get(id=int(a_check))
                 if 'DelWData' in request.POST:
                     a_job.status="Deleting With Data..."
                     the_action="Deleted With Data";
@@ -299,7 +299,7 @@ def index(request):
                 a_job.save()
             for a_check in check_list_start:
                 the_action="Started";
-                a_job = Job.objects.get(queue_id=int(a_check))
+                a_job = Job.objects.get(id=int(a_check))
                 a_job.status = "Starting..."
                 a_job.save()
                 returnlist.append(int(a_check))
@@ -309,7 +309,7 @@ def index(request):
                     if a_job.status == 'Finished':
                         a_job.status = 'Deleting...'
                         a_job.save()
-                        returnlist.append(a_job.queue_id)
+                        returnlist.append(a_job.id)
             return HttpResponse(Context( {'action_performed':the_action,'list':returnlist} ))
         #return HttpResponse(Context( {'status':'Nothing was done'} ))
             
