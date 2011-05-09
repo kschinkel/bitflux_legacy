@@ -6,6 +6,7 @@ from bitflux.engine.models import deamon
 from bitflux.engine.models import autoDLer
 from bitflux.engine.models import autoDLEntry
 from bitflux.engine.models import log
+from bitflux.engine.management.commands import common
 from django.conf import settings
 
 import urllib2
@@ -30,44 +31,6 @@ def log_to_file(msg):
     f = open(settings.AUTODL_LOG, 'a')
     f.write(str(datetime.now())+": "+msg+"\n")
     f.close
-
-def get_espisode_info(name, season, episode):
-    name = name.replace(" ","%20")
-    #http://services.tvrage.com/tools/quickinfo.php?show=Bones&exact=1&ep=2x04
-    base_URL = "http://services.tvrage.com/tools/quickinfo.php"
-    show_str = "?show="+name
-    options = "&exact=1"
-    episode_str = "&ep=" + str(season) + "x" + str(episode)
-    full_URL = base_URL + show_str + options + episode_str
-    m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", full_URL)
-    mvals = m.groupdict()
-    if mvals['port'] is None:
-        mvals['port'] = 80
-    try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
-        conn.request('GET',mvals['path'],"");
-        responce = conn.getresponse()
-        fullhtmlpage = responce.read()
-        conn.close()
-    except Exception,e:
-        print "get_espisode_info: Failed to retrieve show name using URL: " + full_URL
-        print "get_espisode_info: Exception was vale: " + str(e)
-        return "" , ""
-        
-    start_episode_info =  fullhtmlpage.find("Episode Info")
-    sub_string1 = fullhtmlpage[start_episode_info:]
-    start_episode_name = sub_string1.find("^")
-    sub_string2 = sub_string1[start_episode_name+1:]
-    end_episode_name = sub_string2.find("^")
-    episode_name = sub_string1[start_episode_name+1:end_episode_name+start_episode_name+1]
-    
-    start_show_name =  fullhtmlpage.find("Show Name")
-    sub_string1 = fullhtmlpage[start_show_name:]
-    start_episode_name = sub_string1.find("@")
-    sub_string2 = sub_string1[start_episode_name+1:]
-    end_episode_name = sub_string2.find("\n")
-    show_name = sub_string1[start_episode_name+1:end_episode_name+start_episode_name+1]
-    return show_name, episode_name  
     
     
 def email_notification(dl_name,email_address):
@@ -87,47 +50,9 @@ def email_notification(dl_name,email_address):
     server.sendmail(fromaddr, toaddrs, msg)
     server.quit()
     log_to_file("Email notification sent to: "+email_address+" for DL: "+dl_name)
-
-def convert_bytes(bytes):
-    bytes = float(bytes)
-    if bytes >= 1099511627776:
-        terabytes = bytes / 1099511627776
-        size = '%.2fT' % terabytes
-    elif bytes >= 1073741824:
-        gigabytes = bytes / 1073741824
-        size = '%.2fG' % gigabytes
-    elif bytes >= 1048576:
-        megabytes = bytes / 1048576
-        size = '%.2fM' % megabytes
-    elif bytes >= 1024:
-        kilobytes = bytes / 1024
-        size = '%.2fK' % kilobytes
-    else:
-        size = '%.2fb' % bytes
-    return size
-
-def getContentLength(URL):
-    m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URL)
-    mvals = m.groupdict()
-    if mvals['port'] is None:
-        mvals['port'] = 443
-
-    OUT_list = mvals['path'].split('/')
-    filename = OUT_list.pop()
-    filename = urllib.unquote(filename)
-    basic_auth = settings.USERNAME + ":"+settings.PASSWORD
-    encoded = basic_auth.encode("base64")[:-1]
-    headers = {"Authorization":"Basic %s" % encoded}
-    params = ""
-    conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
-    conn.request('GET',mvals['path'],params,headers);
-    responce = conn.getresponse()
-    size = responce.getheader("content-length")
-    conn.close()
-    return size,filename
     
 def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir):
-    size, notused = getContentLength(url)
+    size, notused = common.getContentLength(url)
     #out = dl_dir + filename
     filename = unicode(filename, errors='ignore')
     #Create the new Job
@@ -138,7 +63,7 @@ def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir):
     new_job.dl_speed = 0
     new_job.time_seg_start = -1
     new_job.time_seg_end = -1
-    new_job.display_size = convert_bytes(size)
+    new_job.display_size = common.convert_bytes(size)
     new_job.total_size = size
     new_job.dled_size = 0
     #new_job.dled_dif_size = 0; removed
@@ -199,7 +124,7 @@ def search_server_feed(data):
                         if entry['path'] == '/':
                             url_to_dl = 'https://dl.vpnhub.ca/downloads/'+entry['name']
                             
-                            proper_show_name, proper_episode_name = get_espisode_info(a_show_name, season_found, episode_found)
+                            proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
 
                             if len(proper_show_name) == 0:
                                 print "Show name could not be retrieved"
