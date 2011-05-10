@@ -137,12 +137,12 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
                     Ext.getCmp('startBtn').disable();
                     Ext.getCmp('stopBtn').disable();
                 }
-            if(selRecordList.indexOf(rowIndex) == -1){
-                selRecordList.push(rowIndex);
+            if(selRecordList.indexOf(record.data.nid) == -1){
+                selRecordList.push(record.data.nid);
             }
         },
         rowdeselect : function(smObj, rowIndex, record) {
-            selRecordList.pop(rowIndex);
+            selRecordList.pop(record.data.nid);
         }
     }
 });
@@ -336,7 +336,14 @@ Ext.onReady(function(){
         listeners: {
             'load': {
                 fn: function(obj,row) {
-                    rowSelModel.selectRows(selRecordList);
+                    var row_indexes = new Array();
+                    for(var i=0; i < selRecordList.length; i++ ){
+                        var idx = store.find('nid', selRecordList[i]);
+                        if(-1 !== idx) {
+                            row_indexes.push( idx );
+                        }     
+                    }
+                    rowSelModel.selectRows(row_indexes);
                 }
             }
         }
