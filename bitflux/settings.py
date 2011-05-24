@@ -1,17 +1,15 @@
 # Django settings for BitFlux project.
-LOCAL_DIR = 'C:/Data'                                     #Base directory for web interface
-BINARY_CURL = "C:/Program Files/curl"                    #Binary for CURL
-BINARY_WGET = "C:/Program Files/GnuWin32/bin/wget.exe"    #Binary for WGET
-USERNAME="a_username"                                    #Username for third party server
-PASSWORD="a_password"                                    #Password for third party server
+LOCAL_DIR = '/local/directory/to/all/data'             #Base directory for web interface
+USERNAME="username"                                    #Username for rutorrent
+PASSWORD="password"                                    #Password for rutorrent
 ENGINE_LOG = 'engine.log'                                #log filename for the engine deamon
 AUTODL_LOG = 'autoDL.log'                                #log filename for the auto-downloader deamon
-SERVER_JSON_URL = 'https://somewebsite.com/list/'        #full url to the json location on the third party server
-
+#SERVER_JSON_URL = 'https://dl.vpnhub.ca/torrents/list/'        #full url to the json location on the Bytehive Server; no longer used
+RUTORRNET_URL = 'http://somehost/rutorrent'    #full url to the rutorrent interface of the external server
 #Email notification settings
-EMAIL_TO_LIST = {'person1@somewhere.com','person2@somewhere.com'}    #List of email addresses to send auto-downloaded items a notification to
-EMAIL_FROM_ADDR = 'bitflux@somedomain.com'                           #Email address of where to send the notifications from
-EMAIL_FROM_PASSWD = 'a_email_password'                                     #Password of the email address of where to send the notifications from
+EMAIL_TO_LIST = {'someone@somewhere.com','anotherperson@somwhere.com'}    #List of email addresses to send auto-downloaded items a notification to
+EMAIL_FROM_ADDR = 'bitflux@somwhere.com'                           #Email address of where to send the notifications from
+EMAIL_FROM_PASSWD = 'passwordto-bitflux@somewhere.com'              #Password of the email address of where to send the notifications from
 
 
 

@@ -233,6 +233,7 @@ def index(request):
             new_job.queue_id = len(Job.objects.all())
             new_job.process_pid = -1
             new_job.dl_speed = 0
+            new_job.gid = -1
             new_job.time_seg_start = time.time()
             new_job.time_seg_end = new_job.time_seg_start
             new_job.display_size = convert_bytes(size)

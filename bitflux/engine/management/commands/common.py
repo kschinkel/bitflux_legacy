@@ -2,6 +2,8 @@ from HTMLParser import HTMLParser
 from django.conf import settings
 import re
 import httplib
+import urllib
+import urllib2
 try:
     import json
 except ImportError:
@@ -69,22 +71,65 @@ def convert_time(seconds):
     else:
         format = '%.2fs' % seconds    
     return format  
+    
+    
+def getEntryInfo(URL):
+    m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URL)
+    mvals = m.groupdict()
+    if mvals['port'] is None:
+        mvals['port'] = 80
+        if mvals['type'] == 'https':
+            mvals['port'] = 443
 
+    basic_auth = settings.USERNAME + ":" + settings.PASSWORD
+    encoded = basic_auth.encode("base64")[:-1]
+    headers = {"Authorization":"Basic %s" % encoded}
+    params = ""
+    try:
+        data = urllib.urlencode(params)
+        request = urllib2.Request(URL, data, headers)
+        response = urllib2.urlopen(request)
+        cookie_handler= urllib2.HTTPCookieProcessor()
+        redirect_handler = urllib2.HTTPRedirectHandler()
+        opener = urllib2.build_opener(redirect_handler,cookie_handler)
+        response = opener.open(request)
+        size = response.info().getheader("content-length")
+        filename_raw = response.geturl()
+    except Exception,e:
+        #print "Failed to retrieve page from server: "+str(e)
+        return False, "", -1
+
+    if response.getcode() == 200:
+        filename_list = filename_raw.split('/')
+        filename = filename_list.pop()
+        return True, filename, size
+    else:
+        return False, "", -1
+        
+        
 def getContentLength(URL):
     m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URL)
     mvals = m.groupdict()
     if mvals['port'] is None:
-        mvals['port'] = 443
+        mvals['port'] = 80
+        if mvals['type'] == 'https':
+            mvals['port'] = 443
 
     basic_auth = settings.USERNAME + ":"+settings.PASSWORD
     encoded = basic_auth.encode("base64")[:-1]
     headers = {"Authorization":"Basic %s" % encoded}
     params = ""
-    conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
-    conn.request('GET',mvals['path'],params,headers);
-    responce = conn.getresponse()
-    size = responce.getheader("content-length")
-    conn.close()
+    try:
+        if mvals['type'] == 'https':
+            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
+        else:
+            conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
+        conn.request('GET',mvals['path'],params,headers);
+        responce = conn.getresponse()
+        size = responce.getheader("content-length")
+        conn.close()
+    except Exception,e:
+        return -1
     return size
     
  

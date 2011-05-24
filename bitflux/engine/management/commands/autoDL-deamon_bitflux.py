@@ -25,50 +25,13 @@ except ImportError:
     import simplejson as json
 from HTMLParser import HTMLParser
 import urllib
-import urllib2
 import smtplib
-import xmlrpclib
-
-EXTENSIONS = ['avi']
 
 def log_to_file(msg):
     f = open(settings.AUTODL_LOG, 'a')
     f.write(str(datetime.now())+": "+msg+"\n")
     f.close
     
-def matchWithShows(entry_name_from_server):
-    entry_name_from_server = entry_name_from_server.lower()
-    debug = False
-    #if entry_name_from_server == 'supernatural.s06e22.hdtv.xvid-2hd.avi':
-    #    debug = True
-    for a_show in autoDLEntry.objects.all():
-        if debug:
-            print 'autodl entry',a_show
-        a_show_name = a_show.name.replace(' ','.');
-        a_show_name = a_show_name.lower()
-        for extension in EXTENSIONS:
-            extract_SE = re.match(".*("+a_show_name+").*?[sS]?(\\d{2})[eE]?(\\d{2}).*\." + extension + "$", entry_name_from_server)
-            if extract_SE is None:
-                if debug:
-                    print entry_name_from_server, "did not match",a_show_name
-                extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{2}).*\." + extension +"$", entry_name_from_server)
-                if extract_SE is None:
-                    if debug:
-                        print entry_name_from_server, "did not match",a_show_name
-                    extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{1}).*\." + extension + "$", entry_name_from_server)
-                    if extract_SE is None:
-                        if debug:
-                            print entry_name_from_server, "did not match",a_show_name
-                        #This does not match this show
-                        continue         
-            #If reached this part it has matched 'a_show' to the 'name'
-            if debug:
-                print 'matched!'
-            show_group = extract_SE.groups()
-            season_found = int(show_group[1])
-            episode_found = int(show_group[2])
-            return True, season_found, episode_found, a_show
-    return False, -1, -1, None
     
 def email_notification(dl_name,email_address):
     fromaddr = settings.EMAIL_FROM_ADDR
@@ -88,7 +51,8 @@ def email_notification(dl_name,email_address):
     server.quit()
     log_to_file("Email notification sent to: "+email_address+" for DL: "+dl_name)
     
-def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir,size):
+def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir):
+    size = common.getContentLength(url)
     #out = dl_dir + filename
     filename = unicode(filename, errors='ignore')
     #Create the new Job
@@ -96,7 +60,6 @@ def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir,size):
     new_job.status = 'Queued'
     new_job.queue_id = len(Job.objects.all())
     new_job.process_pid = -1
-    new_job.gid = -1
     new_job.dl_speed = 0
     new_job.time_seg_start = -1
     new_job.time_seg_end = -1
@@ -130,74 +93,103 @@ def check_show_logs(show,S,E):
             return True
     return False
     
-def search_server_feed(full_torrent_listing):
-    for entry in full_torrent_listing:
-        if entry[1] == 0:   #there are no bytes remaining for the download
-            filename = entry[2]
-            is_match, season_found, episode_found, a_show = matchWithShows(filename)
-            if is_match:
+def search_server_feed(data):
+    for entry in data['torrents']:
+        if entry['progress'] == 100: #we only want ones that are finished DLing on the server
+            entry_name_from_server = entry['name']
+            for a_show in autoDLEntry.objects.all():
                 a_show_name = a_show.name.replace(' ','.');
                 a_show_name = a_show_name.lower()
+                entry_name_from_server = entry_name_from_server.lower()
+                '''is_match = re.match("(.*?)"+a_show_name+"(.*?)\.avi$", entry_name_from_server)
+                if is_match is None:
+                    continue'''
+                #log_to_file("Matched show name: "+entry_name_from_server+", Checking S and E...")
+                #extract_SE = re.match("(.*?)[.\\s][sS]?(\\d{2})[eE]?(\\d{2}).*\.avi$", entry_name_from_server)
+                extract_SE = re.match(".*("+a_show_name+").*?[sS]?(\\d{2})[eE]?(\\d{2}).*\.avi$", entry_name_from_server)
+                if extract_SE is None:
+                    extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{2}).*\.avi$", entry_name_from_server)
+                    if extract_SE is None:
+                        extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{1}).*\.avi$", entry_name_from_server)
+                        if extract_SE is None:
+                            #This does not match this show
+                            continue
+                #If reached this part it has matched 'a_show' to the 'name'
+                show_group = extract_SE.groups()
+                season_found = int(show_group[1])
+                episode_found = int(show_group[2])
                 if season_found >= a_show.season_start_at and episode_found >= a_show.ep_start_at: #it is a season and episode we want
                     if check_show_logs(a_show,season_found,episode_found) == False: #make sure we have not already DLed it
-                        count = 0
-                        URLS = []
-                        size = -1
-                        while True: 
-                            a_entry_url = settings.RUTORRNET_URL + "/plugins/data/action.php?hash=" + entry[0] + "&no=" + str(count)
-                            status, filename, size = common.getEntryInfo(a_entry_url)
-                            URLS.append({"URL":a_entry_url,'size':size})
-                            if status:
-                                count += 1
-                            else:
-                                break;
-                        if count == 1:
+                        #only download stuff in the ROOT right now. If its in a sub folder there could be multiple files
+                        if entry['path'] == '/':
+                            url_to_dl = 'https://dl.vpnhub.ca/downloads/'+entry['name']
+                            
                             proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
+
                             if len(proper_show_name) == 0:
-                                #print "Show name could not be retrieved"
+                                print "Show name could not be retrieved"
                                 tv_show_rename = show_name
                             else:
-                                 tv_show_rename = proper_show_name      
-                                    
+                                tv_show_rename = proper_show_name
+
                             tv_show_rename += " S" + str(season_found).zfill(2)
                             tv_show_rename += " E" + str(episode_found).zfill(2)
-                            
-                            if len(proper_episode_name) != 0:
+
+                            if len(proper_episode_name) == 0:
+                                print "Episode name could not be retrieved"
+                            else:
                                 tv_show_rename +=  " - " + proper_episode_name
-                            
-                            get_file_type = filename
+                            get_file_type = entry['name']
                             tv_show_rename += get_file_type[get_file_type.rfind("."):]
                             log_to_file("Found Show to DL: "+tv_show_rename)
-                            newDLtoAdd(URLS[0]["URL"],a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir,URLS[0]["size"])
+                            newDLtoAdd(url_to_dl,a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir)
                             #send email notifications
-                            #for email_addr in settings.EMAIL_TO_LIST:
+                            for email_addr in settings.EMAIL_TO_LIST:
                                 #send email notifications
-                            #    email_notification(tv_show_rename, email_addr)
-                            
-                        elif count > 1:
-                            # do nothing right now
-                            #TBD
-                            pass
-
-                        '''print"============================================"
-                        print "start dl with: ", a_entry_url
-                        print "name:", filename
-                        print "size:", size
-                        print "S",season,"E",episode'''
-                    
-
-    
-def dl_server_feed():
+                                email_notification(tv_show_rename, email_addr)
+        
+def dl_server_feed_OLD(URL): #No longer used
     #log_to_file('Requesting list from server...')
     try:
-        URL = settings.RUTORRNET_URL + "/plugins/rpc/rpc.php"
-        add_name_pass = settings.USERNAME + ":" + settings.PASSWORD + "@"
-        URL = URL.replace("://","://"+add_name_pass)
-        proxy = xmlrpclib.ServerProxy(URL)
-        result = proxy.d.multicall("main","d.get_hash=","d.get_left_bytes=","d.get_name=","d.get_base_path=")
+        req = urllib2.Request(URL)
+        base64string = base64.encodestring(
+                        '%s:%s' % (settings.USERNAME, settings.PASSWORD))[:-1]
+        authheader =  "Basic %s" % base64string
+        req.add_header("Authorization", authheader)
+        handle = urllib2.urlopen(req)
+        thepage = handle.read()
+        result = json.loads(thepage) #parse the json page
     except Exception,e:
         log_to_file("Failed to retrieve page from server: "+str(e))
         return
+    handle.fp._sock.recv=None # hacky avoidance
+    handle.close()
+
+    #log_to_file('Recived list of downloads form engine...')
+    search_server_feed(result)
+    
+def dl_server_feed(URL):
+    #log_to_file('Requesting list from server...')
+    try:
+        m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URL)
+        mvals = m.groupdict()
+        if mvals['port'] is None:
+            mvals['port'] = 443
+
+        basic_auth = settings.USERNAME + ":"+settings.PASSWORD
+        encoded = basic_auth.encode("base64")[:-1]
+        headers = {"Authorization":"Basic %s" % encoded}
+        params = ""
+        conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
+        conn.request('GET',mvals['path'],params,headers);
+        thepage = conn.getresponse().read()
+        result = json.loads(thepage) #parse the json page
+    except Exception,e:
+        log_to_file("Failed to retrieve page from server: "+str(e))
+        return
+    conn.close()
+
+    #log_to_file('Recived list of downloads form engine...')
     search_server_feed(result)
 
 class Command(BaseCommand):
@@ -216,5 +208,5 @@ class Command(BaseCommand):
             autoDLStatus.ts = datetime.now()
             autoDLStatus.save()
             if datetime.now() - prev_time > timedelta (seconds=10):
-                dl_server_feed()
+                dl_server_feed(settings.SERVER_JSON_URL)
                 prev_time = datetime.now()

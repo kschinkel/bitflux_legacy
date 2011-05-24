@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 class Job(models.Model):
     process_pid = models.IntegerField()
     queue_id = models.IntegerField()
+    gid = models.IntegerField()
     dl_speed = models.IntegerField()
     time_seg_start = models.IntegerField()
     time_seg_end = models.IntegerField()
