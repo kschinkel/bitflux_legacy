@@ -1,21 +1,28 @@
+#############################################
 # Django settings for BitFlux project.
-LOCAL_DIR = '/local/directory/to/all/data'             #Base directory for web interface
-USERNAME="username"                                    #Username for rutorrent
-PASSWORD="password"                                    #Password for rutorrent
-ENGINE_LOG = 'engine.log'                                #log filename for the engine deamon
-AUTODL_LOG = 'autoDL.log'                                #log filename for the auto-downloader deamon
-#SERVER_JSON_URL = 'https://dl.vpnhub.ca/torrents/list/'        #full url to the json location on the Bytehive Server; no longer used
-RUTORRNET_URL = 'http://somehost/rutorrent'    #full url to the rutorrent interface of the external server
+#############################################
+LOCAL_DIR = '/mnt/Data/'                                            #Local directory for the filemanager
+BASE_DIR = '/var/www/bitflux/'                                      #Base directory of bitflux; the full path of the directory which contains all files
+USERNAME="someuser"                                                 #Username for third party server
+PASSWORD="somepassword"                                             #Password for third party server
+ENGINE_LOG = 'engine.log'                                           #log filename for the engine deamon
+AUTODL_LOG = 'autoDL.log'                                           #log filename for the auto-downloader deamon
+RUTORRNET_URL = 'http://adomain.com/rutorrent'                      #full URL of the ruTorrent interface
+AUTODL_POLL_INTERVAL = 10                                           #number of seconds at which the auto downloader will poll the server
+EXTENSIONS = ['avi']                                                #list of file extensions to look for. Used by the auto downloader
 #Email notification settings
-EMAIL_TO_LIST = {'someone@somewhere.com','anotherperson@somwhere.com'}    #List of email addresses to send auto-downloaded items a notification to
-EMAIL_FROM_ADDR = 'bitflux@somwhere.com'                           #Email address of where to send the notifications from
-EMAIL_FROM_PASSWD = 'passwordto-bitflux@somewhere.com'              #Password of the email address of where to send the notifications from
+EMAIL_TO_LIST = {'someone@places.com','person2@places.com'}         #List of email addresses to send auto-downloaded items a notification to
+EMAIL_FROM_ADDR = 'address@places.com'                              #Email address of where to send the notifications from
+EMAIL_FROM_PASSWD = 'password'                                      #Password of the email address of where to send the notifications from
+SMTP_SERVER = 'smtp.gmail.com'                                      #Name of SMTP server to use for sending email notifications
+SMTP_PORT = 587                                                     #Port of SMTP server to use for sending email notifications
 
 
-
+#############################################
 #General Django settings
+#############################################
 AUTH_PROFILE_MODULE = 'engine.UserProfile'
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (

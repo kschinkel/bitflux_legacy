@@ -133,6 +133,9 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
                     Ext.getCmp('stopBtn').enable();
                     //controlBar.items.get(3).disable();
                     //controlBar.items.get(4).enable();
+                }else if(record.data.status == 'Queued'){
+                    Ext.getCmp('startBtn').enable();
+                    Ext.getCmp('stopBtn').enable();
                 }else{
                     Ext.getCmp('startBtn').disable();
                     Ext.getCmp('stopBtn').disable();

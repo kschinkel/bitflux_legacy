@@ -333,9 +333,11 @@ def newdir(request):
         full_dir = request.user.get_profile().dl_dir +dir
         try:
             os.mkdir(full_dir)
+            value = 'Created DIR: '+ full_dir
         except OSError:
+            value = 'Failed to create DIR: '+ full_dir
             pass
-        value = 'Created DIR'
+        
     else:
         value = 'Invalid DIR!'
     return HttpResponse(json.dumps(value),mimetype="application/json")

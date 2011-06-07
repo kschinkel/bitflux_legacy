@@ -29,7 +29,6 @@ import urllib2
 import smtplib
 import xmlrpclib
 
-EXTENSIONS = ['avi']
 
 def log_to_file(msg):
     f = open(settings.AUTODL_LOG, 'a')
@@ -39,14 +38,12 @@ def log_to_file(msg):
 def matchWithShows(entry_name_from_server):
     entry_name_from_server = entry_name_from_server.lower()
     debug = False
-    #if entry_name_from_server == 'supernatural.s06e22.hdtv.xvid-2hd.avi':
-    #    debug = True
     for a_show in autoDLEntry.objects.all():
         if debug:
             print 'autodl entry',a_show
         a_show_name = a_show.name.replace(' ','.');
         a_show_name = a_show_name.lower()
-        for extension in EXTENSIONS:
+        for extension in settings.EXTENSIONS:
             extract_SE = re.match(".*("+a_show_name+").*?[sS]?(\\d{2})[eE]?(\\d{2}).*\." + extension + "$", entry_name_from_server)
             if extract_SE is None:
                 if debug:
@@ -78,7 +75,7 @@ def email_notification(dl_name,email_address):
 
     msg = msg + "~BitFlux~ is notifying you of a new automatic download: "+dl_name
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
     server.ehlo()
     server.starttls()
     server.ehlo()
@@ -103,11 +100,10 @@ def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir,size):
     new_job.display_size = common.convert_bytes(size)
     new_job.total_size = size
     new_job.dled_size = 0
-    #new_job.dled_dif_size = 0; removed
     new_job.full_url = url
     new_job.local_directory = dl_dir
-    new_job.filename = filename
-    new_job.notes = "Auto DLed:  " + new_job.local_directory + filename
+    new_job.filename = common.name_wrapper(filename)
+    new_job.notes = "Auto DLed:  " + new_job.local_directory + new_job.filename
     new_job.progress = 0;
     new_job.eta = ""
     new_job.save()
@@ -165,14 +161,14 @@ def search_server_feed(full_torrent_listing):
                             if len(proper_episode_name) != 0:
                                 tv_show_rename +=  " - " + proper_episode_name
                             
-                            get_file_type = filename
+                            get_file_type = entry[2]
                             tv_show_rename += get_file_type[get_file_type.rfind("."):]
                             log_to_file("Found Show to DL: "+tv_show_rename)
                             newDLtoAdd(URLS[0]["URL"],a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir,URLS[0]["size"])
                             #send email notifications
-                            #for email_addr in settings.EMAIL_TO_LIST:
+                            for email_addr in settings.EMAIL_TO_LIST:
                                 #send email notifications
-                            #    email_notification(tv_show_rename, email_addr)
+                                email_notification(tv_show_rename, email_addr)
                             
                         elif count > 1:
                             # do nothing right now
@@ -215,6 +211,6 @@ class Command(BaseCommand):
             autoDLStatus.process_pid = os.getpid()
             autoDLStatus.ts = datetime.now()
             autoDLStatus.save()
-            if datetime.now() - prev_time > timedelta (seconds=10):
+            if datetime.now() - prev_time > timedelta (seconds=settings.AUTODL_POLL_INTERVAL):
                 dl_server_feed()
                 prev_time = datetime.now()

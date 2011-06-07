@@ -175,7 +175,8 @@ def get_espisode_info(name, season, episode):
     
     
     
-def is_tv_show(raw_name):
+def is_tv_show(param):
+    raw_name = param.encode('ascii', 'ignore')
     raw_name = raw_name.replace(' ','.');
     raw_name = raw_name.lower()
 
@@ -253,3 +254,15 @@ def is_movie(raw_name):
     format =  result['Title'] + " (" + result['Year'] + ")"
     format += raw_name[raw_name.rfind("."):]
     return format
+    
+def name_wrapper(raw_name):
+    fixed_name = raw_name.replace('\\','')
+    fixed_name = fixed_name.replace('/','')
+    fixed_name = fixed_name.replace(':','')
+    fixed_name = fixed_name.replace('*','')
+    fixed_name = fixed_name.replace('?','')
+    fixed_name = fixed_name.replace('"','')
+    fixed_name = fixed_name.replace('<','')
+    fixed_name = fixed_name.replace('>','')
+    fixed_name = fixed_name.replace('|','')
+    return fixed_name

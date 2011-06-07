@@ -34,6 +34,19 @@ seed = str(random.random()) + random.choice(string.letters)
 XML_RPC_PASS = seed
 seed = random.choice(string.letters) + str(random.random())
 XML_RPC_USER = seed
+ARIA2C_ARGS = ['aria2c','-q',
+                '--max-tries=0',
+                '--enable-rpc=true',
+                '--rpc-listen-all=true',
+                '--rpc-user='+XML_RPC_USER,
+                '--rpc-passwd='+XML_RPC_PASS,
+                '--max-connection-per-server=10']
+#ARIA2C_ARGS = ['aria2c','--enable-rpc=true','--xml-rpc-listen-all=true','--xml-rpc-user='+XML_RPC_USER,'--xml-rpc-passwd='+XML_RPC_PASS]
+#aria2c --enable-rpc=true --rpc-listen-all=true --rpc-user=test --rpc-passwd=test
+#'--max-connection-per-server=10'
+#'--max-download-result=0'
+ARIA2C = subprocess.Popen(ARIA2C_ARGS,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
 def log_to_file(msg):
     f = open(settings.ENGINE_LOG, 'a')
     f.write(str(datetime.datetime.now())+": "+msg+"\n")
@@ -57,33 +70,40 @@ def loadDirectory(job):
     status = job.status
     local_dir = job.local_directory 
     #remove the directory entry
-    jobs = []
-    jobs.append(job)
-    deleteJobs(jobs)
+    deleteJob(job)
     #continue to parse directory for entries
     m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URLDirectory)
     mvals = m.groupdict()
     if mvals['port'] is None:
-        mvals['port'] = 443
+        mvals['port'] = 80
+        if mvals['type'] == 'https':
+            mvals['port'] = 443
     basic_auth = settings.USERNAME + ":"+settings.PASSWORD
     encoded = basic_auth.encode("base64")[:-1]
     headers = {"Authorization":"Basic %s" % encoded}
     params = ""
-    conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
-    conn.request('GET',mvals['path'],params,headers);
-    responce = conn.getresponse()
-    fullhtmlpage = responce.read()
-    conn.close()
-    myparser  = common.MyHTMLParser()
-    myparser.feed(fullhtmlpage)
-    first =0
+    try:
+        if mvals['type'] == 'https':
+            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
+        else:
+            conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
+        conn.request('GET',mvals['path'],params,headers);
+        responce = conn.getresponse()
+        fullhtmlpage = responce.read()
+        conn.close()
+        myparser  = common.MyHTMLParser()
+        myparser.feed(fullhtmlpage)
+    except Exception,e:
+        log_to_file("Failed to load directory: " + URLDirectory)
+        return
+
     for entry in myparser.set_links_with_dir(URLDirectory):
         OUT_list = entry.split('/')
         filename = OUT_list.pop()
         filename = urllib.unquote(filename)
 
         try:
-            status, filename, size = common.getEntryInfo(entry)
+            responce, filename, size = common.getEntryInfo(entry)
         except:
             size = -1
         out_list = mvals['path'].split('/')
@@ -127,8 +147,8 @@ def loadDirectory(job):
         #new_job.dled_dif_size = 0; removed
         new_job.full_url = full_dl_path
         new_job.local_directory = local_dir
-        new_job.filename = filename 
-        new_job.notes = "CURL download: " + new_job.local_directory + filename
+        new_job.filename = common.name_wrapper(filename)
+        new_job.notes = "CURL download: " + new_job.local_directory + new_job.filename
         new_job.progress = 0;
         new_job.eta = "";
         new_job.save()
@@ -140,41 +160,30 @@ def fixEntriesAfter(fix_queue_id):
             a_job.queue_id = a_job.queue_id -1
             a_job.save()
     
-def deleteJobs(jobs):
-    for a_job in jobs:
-        a_job.delete()
-        s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
-        s.aria2.remove(str(job.gid))
-        log_to_file("Removed job with queue id: "+str(a_job.queue_id))
-    jobs.reverse()
-    for a_job in jobs:
-        fixEntriesAfter(a_job.queue_id)
+def deleteJob(a_job):
+    if a_job.gid != -1:
+        try:
+            #s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
+            s.aria2.remove(str(a_job.gid))
+        except Exception,e:
+            log_to_file("aria2: failed to remove "+str(a_job.gid)+" "+a_job.filename)
+    log_to_file("Removed job with queue id: "+str(a_job.queue_id))
+    a_job.delete()
 
-def killJob(job):
+def pauseJob(job):
     if job.gid != -1:
         try:
-            s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
+            #s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
             s.aria2.pause(str(job.gid))
             log_to_file("Pausing: "+str(job.gid))
         except Exception,e:
             log_to_file("Cannot pause"+str(job.gid)+" "+job.filename)
     else:
         log_to_file("Tried to stop download with invalid gid!"+job.filename)
-    '''if pid != -1:
-        try:
-            if sys.platform == "win32":
-                PROCESS_TERMINATE = 1
-                handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
-                ctypes.windll.kernel32.TerminateProcess(handle, -1)
-                ctypes.windll.kernel32.CloseHandle(handle)
-            else:
-                os.kill(pid, signal.SIGKILL)
-        except OSError:
-            log_to_file("Process: "+str(pid)+" does not exsist")'''
             
 def startJob(job):
     if job.gid == -1:
-        s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
+        #s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
         options = {"dir":job.local_directory,
                     "out":job.filename,
                     "http-passwd":settings.PASSWORD,
@@ -183,42 +192,17 @@ def startJob(job):
                     }
         gid = s.aria2.addUri([job.full_url],options)
         job.gid = int(gid)
-        job.status="Running"
-        job.save()
     else:
-        s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
+        #s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
         s.aria2.unpause(str(job.gid))
-        job.status="Running"
-        job.save()
-
-    '''URL = job.full_url.replace('://','://'+settings.USERNAME+":"+settings.PASSWORD+"@")
-    local_path = job.local_directory + job.filename'''
-    log_to_file("Started job: "+str(job.gid)+"   name:"+job.filename)
-    #WGET_ARGS = ['wget','-c','-q','--user='+settings.USERNAME,'--password='+settings.PASSWORD,'--no-check-certificate',URL,'--output-document='+local_path]
-    #process = subprocess.Popen(WGET_ARGS,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    #aria2c_args = ['aria2c','-c','-q','--file-allocation=none','--http-user='+settings.USERNAME,'--http-passwd='+settings.PASSWORD,'-d',job.local_directory,URL]
-    #CURL_ARGS = ['curl','-u',settings.USERNAME+':'+settings.PASSWORD,'-C','-','-s',URL,'-o',local_path]
-    
-    '''AXEL_ARGS = ['axel','-q',URL,'-o',local_path]
-    process = subprocess.Popen(AXEL_ARGS,stdout=subprocess.PIPE,stderr=subprocess.PIPE)'''
-    #aria2c -c --file-allocation=none --http-user=kschinkel --http-passwd=Schinkel123 -d /mnt/Data/incoming http://kschinkel.ferret.feralhosting.com/rutorrent/DATA/Family.Guy.S09E18.Its.a.Trap.HDTV.XviD-LOL.avi
-    
-    #curl -u kschinkel:Schinkel123 -C - http://kschinkel.ferret.feralhosting.com/rutorrent/DATA/South.Park.S15E04.T.M.I.UNCENSORED.HDRiP.XviD-T00NG0D.avi -O
-    # curl -u kschinkel:Schinkel123 -C - http://kschinkel.ferret.feralhosting.com/rutorrent/DATA/South.Park.S15E04.T.M.I.UNCENSORED.HDRiP.XviD-T00NG0D.avi -o /mnt/Data/incoming/test.avi
-    #axel -q http://kschinkel:Schinkel123@kschinkel.ferret.feralhosting.com/rutorrent/DATA/South.Park.S15E04.T.M.I.UNCENSORED.HDRiP.XviD-T00NG0D.avi -o /mnt/Data/incoming/test.avi
-    #axel -q http://kschinkel:Schinkel123kschinkel.ferret.feralhosting.com/rutorrent/DATA/South.Park.S15E04.T.M.I.UNCENSORED.HDRiP.XviD-T00NG0D.avi -o /mnt/Data//incoming/South.Park.S15E04.T.M.I.UNCENSORED.HDRiP.XviD-T00NG0D.avi
-    
-    '''
-           --http-user=USER
-           Set HTTP user. This affects all URIs.
-
-       --http-passwd=PASSWD
-           Set HTTP password. This affects all URIs.
-        -c continue
         
-        -d directory'''
+    job.status="Running"
+    job.save()
+    log_to_file("Started job: "+str(job.gid)+"   name:"+job.filename)
+
     
 def runEngine():
+    
     for cleanup in deamon.objects.all():
             cleanup.delete()
     os.environ['TZ'] = 'US/Eastern'
@@ -244,18 +228,13 @@ def runEngine():
             elif a_job.autorename:
                 show_name = common.is_tv_show(a_job.filename)
                 if len(show_name) > 0:
-                   a_job.filename = show_name
+                   a_job.filename = common.name_wrapper(show_name)
                    #a_job.filename = unicode(show_name, errors='ignore')
                 else:
                     movie_name = common.is_movie(a_job.filename)
                     if len(movie_name) > 0:
-                            a_job.filename = movie_name
-                            #a_job.filename = unicode(movie_name, errors='ignore') 
-                    '''else:
-                        parent_dir = urllib.unquote(parent_dir)
-                        movie_name = is_movie(parent_dir)
-                        if len(movie_name) > 0:
-                            a_job.filename = movie_name'''
+                            a_job.filename = common.name_wrapper(movie_name)
+
                 a_job.autorename = False
                 a_job.save()
             status, filename, size = common.getEntryInfo(a_job.full_url)
@@ -275,8 +254,7 @@ def runEngine():
     for a_job in Job.objects.all().order_by('queue_id'):
     
         if a_job.status == 'Running':
-            s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
-            stats = s.aria2.tellStatus(str(a_job.gid))
+            stats = s.aria2.tellStatus(str(a_job.gid),['gid','downloadSpeed','completedLength','status','connections'])
             a_job.dl_speed = int(stats['downloadSpeed'])
             a_job.dled_size = int(stats['completedLength'])
             a_job.progress = (float(a_job.dled_size)/float(a_job.total_size))*100
@@ -322,11 +300,9 @@ def runEngine():
         
         if a_job.status == 'Starting...':
             startJob(a_job)
-            #a_job.status = "Running"
-            #a_job.save()
         
         elif a_job.status == 'Stopping...':
-            killJob(a_job)
+            pauseJob(a_job)
             a_job.process_pid = -1
             a_job.dl_speed=0
             a_job.status="Stopped"
@@ -335,56 +311,49 @@ def runEngine():
             a_job.save()
         
         elif a_job.status == 'Deleting...' or a_job.status == 'Deleting With Data...':
-            killJob(a_job)
-            #tobeDel.append(a_job)
-            if a_job.status == 'Deleting With Data...':
-                try:
-                    os.remove(a_job.local_directory + a_job.filename)
-                except OSError:
-                    if a_job.dled_size != 0:
-                        log_to_file("Could not remove data for file: " + a_job.local_directory + a_job.filename)
-            log_to_file("Deleting: " + a_job.filename)
-            a_job.delete()        
+            path_to_delete = a_job.local_directory + a_job.filename
+            status = a_job.status
+            gid = a_job.gid
+            deleteJob(a_job) 
+            if status == 'Deleting With Data...':
+                if gid != -1:
+                    try:
+                        os.remove(path_to_delete)
+                        os.remove(path_to_delete + ".aria2")
+                    except Exception,e:
+                        log_to_file("Failed to delete files: " + str(e))
+            log_to_file("Deleted: " + path_to_delete)
+                   
         elif a_job.status == 'Running':
             num_dls = num_dls +1
         elif a_job.status == "Queued" and num_dls < num_dls_at_once:
             startJob(a_job)
-            #a_job.status = "Running"
-            #a_job.save()
             num_dls = num_dls +1
-    #deleteJobs(tobeDel)
 
 class Command(BaseCommand):
-    args = '<poll_id poll_id ...>'
-    help = 'Closes the specified poll for voting'
     def handle(self, *args, **options):
         print "Now running... View",settings.ENGINE_LOG,"for more information"
         for a_job in Job.objects.all():
-            if a_job.status == "Running" or a_job.status == "Starting..." :
+            if a_job.gid != -1:
                 a_job.gid = -1
-                a_job.status = "Stopped"
+                if a_job.status == "Running":
+                    a_job.status = "Queued"
                 a_job.save()
-        test = "test"
-        #test = test.encode("base64")[:-1]
-        ARIA2C_ARGS = ['aria2c','-q','--enable-xml-rpc=true','--xml-rpc-listen-all=true','--xml-rpc-user='+XML_RPC_USER,'--xml-rpc-passwd='+XML_RPC_PASS]
-        aria2c = subprocess.Popen(ARIA2C_ARGS,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
         try:
             while(1):
-                #try:
                 runEngine()
                 time.sleep(1)
-                #except Exception,e:
-                 #   log_to_file(str(e))
         except Exception,e:
             print traceback.print_exc()
             log_to_file(str(e))
             if sys.platform == "win32":
                 PROCESS_TERMINATE = 1
-                handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, aria2c.pid)
+                handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, ARIA2C.pid)
                 ctypes.windll.kernel32.TerminateProcess(handle, -1)
                 ctypes.windll.kernel32.CloseHandle(handle)
             else:
-                os.kill(aria2c.pid, signal.SIGKILL)
+                os.kill(ARIA2C.pid, signal.SIGKILL)
             exit()
                 
         

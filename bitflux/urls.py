@@ -25,7 +25,7 @@ urlpatterns = patterns('',
 	(r'^accounts/login/$', "django.contrib.auth.views.login", 
 	{"template_name": "login.html"}),
     (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
-    {'document_root': '/var/www/bitflux/media'}),
+    {'document_root': settings.BASE_DIR + 'media'}),
     (r'^media/(?P<path>.*)$', 'django.views.static.serve',
-    {'document_root': '/var/www/bitflux/media/admin_media'})
+    {'document_root': settings.BASE_DIR + 'media/admin_media'})
 )
