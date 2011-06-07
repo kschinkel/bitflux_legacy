@@ -256,7 +256,8 @@ def is_movie(raw_name):
     return format
     
 def name_wrapper(raw_name):
-    fixed_name = raw_name.replace('\\','')
+    fixed_name = urllib.unquote(raw_name)
+    fixed_name = fixed_name.replace('\\','')
     fixed_name = fixed_name.replace('/','')
     fixed_name = fixed_name.replace(':','')
     fixed_name = fixed_name.replace('*','')
