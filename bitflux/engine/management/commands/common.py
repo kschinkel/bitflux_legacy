@@ -180,23 +180,34 @@ def is_tv_show(param):
     raw_name = raw_name.replace(' ','.');
     raw_name = raw_name.lower()
 
-    extract_SE = re.match(".*[sS]?(\\d{2})[eE]?(\\d{2}).*\.avi$", raw_name)
+    extract_SE = re.match("(.*)[sS](\\d{2})[eE](\\d{2}).*\.avi$", raw_name)
     if extract_SE is None:
-        extract_SE = re.match(".*[sS]?(\\d{1})[eE]?(\\d{2}).*\.avi$", raw_name)
+        #print 'failed match 1'
+        extract_SE = re.match("(.*)[sS](\\d{1})[eE](\\d{2}).*\.avi$", raw_name)
         if extract_SE is None:
-            extract_SE = re.match(".*[sS]?(\\d{1})[eE]?(\\d{1}).*\.avi$", raw_name)
+            #print 'failed match 2'
+            extract_SE = re.match("(.*)[sS](\\d{1})[eE]?(\\d{1}).*\.avi$", raw_name)
             if extract_SE is None:
-                #This does not match a show
-                return ""
+                #print 'failed match 3'
+                extract_SE = re.match("(.*)(\\d{2})[xX](\\d{2}).*\.avi$", raw_name)
+                if extract_SE is None:
+                    #print 'failed match 4'
+                    extract_SE = re.match("(.*)(\\d{1})[xX](\\d{2}).*\.avi$", raw_name)
+                    if extract_SE is None:
+                        #print 'failed match 5'
+                        extract_SE = re.match("(.*)(\\d{1})[xX](\\d{1}).*\.avi$", raw_name)
+                        if extract_SE is None:
+                            #print 'failed match 6'
+                            #This does not match a show
+                            return ""
     show_group = extract_SE.groups()
-    extracted_season = int(show_group[0])
-    extracted_episode = int(show_group[1])
-    extracted_name = raw_name[:raw_name.find("s"+show_group[0])]
+    extracted_name = show_group[0]
+    extracted_season = int(show_group[1])
+    extracted_episode = int(show_group[2])
     extracted_name = extracted_name.replace('.',' ')
-    extracted_name = extracted_name.rstrip()
-    
+    extracted_name = extracted_name.replace('-',' ')
     proper_show_name, proper_episode_name = get_espisode_info(extracted_name, extracted_season, extracted_episode)
-    
+
     if len(proper_show_name) == 0 or len(proper_episode_name) == 0 :
         return ""
     
