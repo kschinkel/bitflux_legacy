@@ -9,8 +9,8 @@ class Job(models.Model):
     time_seg_start = models.IntegerField()
     time_seg_end = models.IntegerField()
     display_size = models.CharField(max_length=512)
-    total_size = models.IntegerField()
-    dled_size = models.IntegerField()
+    total_size = models.FloatField()
+    dled_size = models.FloatField()
     #dled_dif_size = models.IntegerField()    #Possibly not needed
     full_url = models.CharField(max_length=512)
     local_directory = models.CharField(max_length=512)
