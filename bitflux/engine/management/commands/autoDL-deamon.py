@@ -43,28 +43,29 @@ def matchWithShows(entry_name_from_server):
             print 'autodl entry',a_show
         a_show_name = a_show.name.replace(' ','.');
         a_show_name = a_show_name.lower()
-        for extension in settings.EXTENSIONS:
-            extract_SE = re.match(".*("+a_show_name+").*?[sS]?(\\d{2})[eE]?(\\d{2}).*\." + extension + "$", entry_name_from_server)
+        extract_SE = re.match(".*("+a_show_name+").*?[sS]?(\\d{2})[eE]?(\\d{2}).*\.", entry_name_from_server)
+        if extract_SE is None:
+            if debug:
+                print entry_name_from_server, "did not match",a_show_name
+            extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{2}).*\.", entry_name_from_server)
             if extract_SE is None:
                 if debug:
                     print entry_name_from_server, "did not match",a_show_name
-                extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{2}).*\." + extension +"$", entry_name_from_server)
+                extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{1}).*\.", entry_name_from_server)
                 if extract_SE is None:
                     if debug:
                         print entry_name_from_server, "did not match",a_show_name
-                    extract_SE = re.match(".*?("+a_show_name+").*?[sS]?(\\d{1})[eE]?(\\d{1}).*\." + extension + "$", entry_name_from_server)
-                    if extract_SE is None:
-                        if debug:
-                            print entry_name_from_server, "did not match",a_show_name
-                        #This does not match this show
-                        continue         
-            #If reached this part it has matched 'a_show' to the 'name'
-            if debug:
-                print 'matched!'
-            show_group = extract_SE.groups()
-            season_found = int(show_group[1])
-            episode_found = int(show_group[2])
-            return True, season_found, episode_found, a_show
+                    #This does not match this show
+                    continue         
+        #If reached this part it has matched 'a_show' to the 'name'
+        if debug:
+            print entry_name_from_server,'matched!'
+        show_group = extract_SE.groups()
+        season_found = int(show_group[1])
+        episode_found = int(show_group[2])
+        return True, season_found, episode_found, a_show
+    if debug:
+        print entry_name_from_server, "did not match any autoDL entries"
     return False, -1, -1, None
     
 def email_notification(dl_name,email_address):
@@ -142,33 +143,39 @@ def search_server_feed(full_torrent_listing):
                         while True: 
                             a_entry_url = settings.RUTORRNET_URL + "/plugins/data/action.php?hash=" + entry[0] + "&no=" + str(count)
                             status, filename, size = common.getEntryInfo(a_entry_url)
-                            URLS.append({"URL":a_entry_url,'size':size})
+                            type = filename[filename.rfind("."):]
+                            type = type.strip(".")
+                            URLS.append({"URL":a_entry_url,'size':size,'type':type})
                             if status:
                                 count += 1
                             else:
                                 break;
                         if count == 1:
-                            proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
-                            if len(proper_show_name) == 0:
-                                #print "Show name could not be retrieved"
-                                tv_show_rename = show_name
-                            else:
-                                 tv_show_rename = proper_show_name      
-                                    
-                            tv_show_rename += " S" + str(season_found).zfill(2)
-                            tv_show_rename += " E" + str(episode_found).zfill(2)
-                            
-                            if len(proper_episode_name) != 0:
-                                tv_show_rename +=  " - " + proper_episode_name
-                            
-                            get_file_type = entry[2]
-                            tv_show_rename += get_file_type[get_file_type.rfind("."):]
-                            log_to_file("Found Show to DL: "+tv_show_rename)
-                            newDLtoAdd(URLS[0]["URL"],a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir,URLS[0]["size"])
-                            #send email notifications
-                            for email_addr in settings.EMAIL_TO_LIST:
+                            file_type_wanted = False 
+                            for a_extension in settings.EXTENSIONS:
+                                if URLS[0]["type"] == a_extension:
+                                    file_type_wanted = True
+                            if file_type_wanted:
+                                proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
+                                if len(proper_show_name) == 0:
+                                    #print "Show name could not be retrieved"
+                                    tv_show_rename = show_name
+                                else:
+                                     tv_show_rename = proper_show_name      
+                                        
+                                tv_show_rename += " S" + str(season_found).zfill(2)
+                                tv_show_rename += " E" + str(episode_found).zfill(2)
+                                
+                                if len(proper_episode_name) != 0:
+                                    tv_show_rename +=  " - " + proper_episode_name
+                                
+                                tv_show_rename += "." + URLS[0]["type"]
+                                log_to_file("Found Show to DL: "+tv_show_rename)
+                                newDLtoAdd(URLS[0]["URL"],a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir,URLS[0]["size"])
                                 #send email notifications
-                                email_notification(tv_show_rename, email_addr)
+                                for email_addr in settings.EMAIL_TO_LIST:
+                                    #send email notifications
+                                    email_notification(tv_show_rename, email_addr)
                             
                         elif count > 1:
                             # do nothing right now
