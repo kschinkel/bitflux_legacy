@@ -10,8 +10,12 @@ except ImportError:
     import simplejson as json
     
 class MyHTMLParser(HTMLParser):
-    links=[]
-    links_with_dir=[]
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.links=[]
+        self.links_with_dir=[]
+
+    
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             a_link = attrs[0][1]
@@ -21,7 +25,7 @@ class MyHTMLParser(HTMLParser):
                 is_rar_archieve = re.match(".*\.r[0-9]*$", a_link)
                 if is_rar_archieve is not None:
                    self.links.append(a_link)
-    def set_links_with_dir(self, dir):
+    def set_links_with_dir(self, dir):     
         for entry in self.links:
             sep_link =  entry.split('/')
             filename = sep_link[len(sep_link)-1]

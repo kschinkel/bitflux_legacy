@@ -82,6 +82,7 @@ def loadDirectory(job):
     encoded = basic_auth.encode("base64")[:-1]
     headers = {"Authorization":"Basic %s" % encoded}
     params = ""
+    myparser  = common.MyHTMLParser()
     try:
         if mvals['type'] == 'https':
             conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
@@ -91,7 +92,6 @@ def loadDirectory(job):
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
         conn.close()
-        myparser  = common.MyHTMLParser()
         myparser.feed(fullhtmlpage)
     except Exception,e:
         log_to_file("Failed to load directory: " + URLDirectory)
@@ -152,7 +152,7 @@ def loadDirectory(job):
         new_job.progress = 0;
         new_job.eta = "";
         new_job.save()
-
+    myparser.close()
     
 def fixEntriesAfter(fix_queue_id):
     for a_job in Job.objects.all().order_by('queue_id'):
@@ -203,22 +203,21 @@ def startJob(job):
     
 def runEngine():
     
-    for cleanup in deamon.objects.all():
-            cleanup.delete()
-    os.environ['TZ'] = 'US/Eastern'
-    engineStatus = deamon()
-    engineStatus.process_pid = os.getpid()
-    engineStatus.ts = datetime.datetime.now()
-    engineStatus.save()
-    
-    num_dls_at_once = 1
-    num_dls = 0
-    tobeDel = []
-    reorder =0 
-    for a_job in Job.objects.all().order_by('queue_id'):
-        a_job.queue_id = reorder
-        a_job.save()
-        reorder += 1
+    for a_job in Job.objects.all():
+        if a_job.status == 'Deleting...' or a_job.status == 'Deleting With Data...':
+            path_to_delete = a_job.local_directory + a_job.filename
+            status = a_job.status
+            gid = a_job.gid
+            deleteJob(a_job) 
+            if status == 'Deleting With Data...':
+                if gid != -1:
+                    try:
+                        os.remove(path_to_delete)
+                        os.remove(path_to_delete + ".aria2")
+                    except Exception,e:
+                        log_to_file("Failed to delete files: " + str(e))
+            log_to_file("Deleted: " + path_to_delete)
+            
         if a_job.status.startswith('New'):
             log_to_file('new job found')
             if a_job.full_url.endswith('/'):
@@ -241,15 +240,21 @@ def runEngine():
             a_job.total_size = size
             a_job.display_size = common.convert_bytes(a_job.total_size)
             a_job.save()
-        if a_job.status.endswith('Queue'):
-            a_job.status = 'Queued'
-            a_job.save()
-        elif a_job.status.endswith('Stop'):
-            a_job.status = 'Stopped'
-            a_job.save()
-        elif a_job.status.endswith('Start'):
-            a_job.status = 'Starting...'
-            a_job.save()
+            if a_job.status.endswith('Queue'):
+                a_job.status = 'Queued'
+                a_job.save()
+            elif a_job.status.endswith('Stop'):
+                a_job.status = 'Stopped'
+                a_job.save()
+            elif a_job.status.endswith('Start'):
+                a_job.status = 'Starting...'
+                a_job.save()
+
+    
+    num_dls_at_once = 1
+    num_dls = 0
+    tobeDel = []
+ 
         
     for a_job in Job.objects.all().order_by('queue_id'):
     
@@ -309,27 +314,27 @@ def runEngine():
             a_job.eta = ""
             log_to_file("Stopped: "+str(a_job.queue_id)+" "+a_job.filename)
             a_job.save()
-        
-        elif a_job.status == 'Deleting...' or a_job.status == 'Deleting With Data...':
-            path_to_delete = a_job.local_directory + a_job.filename
-            status = a_job.status
-            gid = a_job.gid
-            deleteJob(a_job) 
-            if status == 'Deleting With Data...':
-                if gid != -1:
-                    try:
-                        os.remove(path_to_delete)
-                        os.remove(path_to_delete + ".aria2")
-                    except Exception,e:
-                        log_to_file("Failed to delete files: " + str(e))
-            log_to_file("Deleted: " + path_to_delete)
                    
         elif a_job.status == 'Running':
             num_dls = num_dls +1
         elif a_job.status == "Queued" and num_dls < num_dls_at_once:
             startJob(a_job)
             num_dls = num_dls +1
-
+            
+    for cleanup in deamon.objects.all():
+                cleanup.delete()
+    os.environ['TZ'] = 'US/Eastern'
+    engineStatus = deamon()
+    engineStatus.process_pid = os.getpid()
+    engineStatus.ts = datetime.datetime.now()
+    engineStatus.save()
+    
+    reorder =0 
+    for a_job in Job.objects.all().order_by('queue_id'):
+        a_job.queue_id = reorder
+        a_job.save()
+        reorder += 1
+            
 class Command(BaseCommand):
     def handle(self, *args, **options):
         print "Now running... View",settings.ENGINE_LOG,"for more information"

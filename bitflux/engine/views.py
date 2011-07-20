@@ -52,10 +52,11 @@ def enginestatus(request):
     objList = []
     response = 'up'
     os.environ['TZ'] = 'US/Eastern'
-
+    nowTS = datetime.now()
     for engine in deamon.objects.all():
-        if datetime.now() - engine.ts > timedelta (seconds=20):
-            response = 'down'
+        diff = nowTS - engine.ts
+        if diff > timedelta (seconds=20):
+            response = 'down; now:' + str(nowTS) + " engine:" + str(engine.ts) + " diff:" + str(diff)
             
     return HttpResponse(json.dumps(response))
 
