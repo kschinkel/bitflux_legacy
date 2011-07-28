@@ -152,7 +152,7 @@ def get_espisode_info(name, season, episode):
     if mvals['port'] is None:
         mvals['port'] = 80
     try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'])
+        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
         conn.request('GET',mvals['path'],"");
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
