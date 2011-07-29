@@ -159,7 +159,7 @@ def search_server_feed(full_torrent_listing):
                                 proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
                                 if len(proper_show_name) == 0:
                                     #print "Show name could not be retrieved"
-                                    tv_show_rename = show_name
+                                    tv_show_rename = a_show_name
                                 else:
                                      tv_show_rename = proper_show_name      
                                         
