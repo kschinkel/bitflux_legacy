@@ -202,124 +202,100 @@ def startJob(job):
 
     
 def runEngine():
+    jobs_deleted = 0
     
-    for a_job in Job.objects.all():
-        if a_job.status == 'Deleting...' or a_job.status == 'Deleting With Data...':
-            path_to_delete = a_job.local_directory + a_job.filename
-            status = a_job.status
-            gid = a_job.gid
-            deleteJob(a_job) 
-            if status == 'Deleting With Data...':
-                if gid != -1:
-                    try:
-                        os.remove(path_to_delete)
-                        os.remove(path_to_delete + ".aria2")
-                    except Exception,e:
-                        log_to_file("Failed to delete files: " + str(e))
-            log_to_file("Deleted: " + path_to_delete)
-            
-        if a_job.status.startswith('New'):
-            log_to_file('new job found')
-            if a_job.full_url.endswith('/'):
-                #load directory
-                loadDirectory(a_job)
-                continue #continue, because this specific job is going to be deleted, and more created
-            elif a_job.autorename:
-                show_name = common.is_tv_show(a_job.filename)
-                if len(show_name) > 0:
-                   a_job.filename = common.name_wrapper(show_name)
-                   #a_job.filename = unicode(show_name, errors='ignore')
-                else:
-                    movie_name = common.is_movie(a_job.filename)
-                    if len(movie_name) > 0:
-                            a_job.filename = common.name_wrapper(movie_name)
-
-                a_job.autorename = False
-                a_job.save()
-            status, filename, size = common.getEntryInfo(a_job.full_url)
-            a_job.total_size = size
-            a_job.display_size = common.convert_bytes(a_job.total_size)
+    for a_job in Job.objects.filter(status__startswith='Deleting'):
+        jobs_deleted +=1
+        path_to_delete = a_job.local_directory + a_job.filename
+        status = a_job.status
+        gid = a_job.gid
+        deleteJob(a_job) 
+        if status == 'Deleting With Data...':
+            if gid != -1:
+                try:
+                    os.remove(path_to_delete)
+                    os.remove(path_to_delete + ".aria2")
+                except Exception,e:
+                    log_to_file("Failed to delete files: " + str(e))
+        log_to_file("Deleted: " + path_to_delete)
+        
+    if jobs_deleted > 0:
+        reorder =0 
+        for a_job in Job.objects.all().order_by('queue_id'):
+            a_job.queue_id = reorder
             a_job.save()
-            if a_job.status.endswith('Queue'):
-                a_job.status = 'Queued'
-                a_job.save()
-            elif a_job.status.endswith('Stop'):
-                a_job.status = 'Stopped'
-                a_job.save()
-            elif a_job.status.endswith('Start'):
-                a_job.status = 'Starting...'
-                a_job.save()
+            reorder += 1
+        
+    for a_job in Job.objects.filter(status__startswith='New'):
+        log_to_file('new job found')
+        if a_job.full_url.endswith('/'):
+            #load directory
+            loadDirectory(a_job)
+            continue #continue, because this specific job is going to be deleted, and more created
+        elif a_job.autorename:
+            show_name = common.is_tv_show(a_job.filename)
+            if len(show_name) > 0:
+               a_job.filename = common.name_wrapper(show_name)
+               #a_job.filename = unicode(show_name, errors='ignore')
+            else:
+                movie_name = common.is_movie(a_job.filename)
+                if len(movie_name) > 0:
+                        a_job.filename = common.name_wrapper(movie_name)
+
+            a_job.autorename = False
+            a_job.save()
+        status, filename, size = common.getEntryInfo(a_job.full_url)
+        a_job.total_size = size
+        a_job.display_size = common.convert_bytes(a_job.total_size)
+        a_job.save()
+        if a_job.status.endswith('Queue'):
+            a_job.status = 'Queued'
+            a_job.save()
+        elif a_job.status.endswith('Stop'):
+            a_job.status = 'Stopped'
+            a_job.save()
+        elif a_job.status.endswith('Start'):
+            a_job.status = 'Starting...'
+            a_job.save()
+
+            
 
     
     num_dls_at_once = 1
     num_dls = 0
-    tobeDel = []
  
-        
-    for a_job in Job.objects.all().order_by('queue_id'):
-    
-        if a_job.status == 'Running':
-            stats = s.aria2.tellStatus(str(a_job.gid),['gid','downloadSpeed','completedLength','status','connections'])
-            a_job.dl_speed = int(stats['downloadSpeed'])
-            a_job.dled_size = int(stats['completedLength'])
-            a_job.progress = (float(a_job.dled_size)/float(a_job.total_size))*100
-            ETA = getETA(a_job.total_size, a_job.dled_size,  a_job.dl_speed)
-            a_job.eta = common.convert_time(ETA)
-            a_job.save()
-            '''if os.path.exists(a_job.local_directory + a_job.filename):
-                dled_size_str = os.path.getsize(a_job.local_directory + a_job.filename)
-                dled_size_int = int(dled_size_str)#/1048576
-                #a_job.dled_size = dled_size_int
-                try:
-                    a_job.progress = (float(dled_size_int)/float(a_job.total_size))*100
-                except:
-                    log_to_file("Progress calculation failed!")
-                    progress = 0
-                #time_seg_end = time.clock()
-                #time_seg_end = float(time.ctime())
-                a_job.time_seg_end = time.time()
-                dif_data = dled_size_int - a_job.dled_size
-                time_dif = a_job.time_seg_end - a_job.time_seg_start
-                if time_dif > 0:
-                    try:
-                        a_job.dl_speed = (dif_data/time_dif)
-                    except:
-                        log_to_file("DL Speed calculation failed!")
-                        a_job.dl_speed = -1
-                    a_job.time_seg_start = a_job.time_seg_end
-                #a_job.dled_dif_size = a_job.dled_size           dled_dif_size was removed
-                a_job.dled_size = dled_size_int
-                
-                #Calc ETA
-                ETA = getETA(a_job.total_size, a_job.dled_size,  a_job.dl_speed)
-                a_job.eta = common.convert_time(ETA)
-                a_job.save()
-            else:
-                log_to_file("Cannot find file: "+a_job.local_directory + a_job.filename+" to compute stats for")'''
-
-        if a_job.progress ==100 and a_job.status !='Finished' and a_job.status != 'Deleting...' and a_job.status != 'Deleting With Data...':
+    for a_job in Job.objects.filter(status='Running'):
+        num_dls = num_dls +1
+        stats = s.aria2.tellStatus(str(a_job.gid),['gid','downloadSpeed','completedLength','status','connections'])
+        a_job.dl_speed = int(stats['downloadSpeed'])
+        a_job.dled_size = int(stats['completedLength'])
+        progress = (float(a_job.dled_size)/float(a_job.total_size))*100
+        if progress == 100:
             a_job.status = 'Finished'
             a_job.dl_speed=0
             a_job.process_pid=-1
-            a_job.save()
-        
-        if a_job.status == 'Starting...':
+        a_job.progress = progress
+        ETA = getETA(a_job.total_size, a_job.dled_size,  a_job.dl_speed)
+        a_job.eta = common.convert_time(ETA)
+        a_job.save()
+    
+    for a_job in Job.objects.filter(status='Starting...'):
+        startJob(a_job)
+    
+    for a_job in Job.objects.filter(status='Stopping...'):
+        pauseJob(a_job)
+        a_job.process_pid = -1
+        a_job.dl_speed=0
+        a_job.status="Stopped"
+        a_job.eta = ""
+        log_to_file("Stopped: "+str(a_job.queue_id)+" "+a_job.filename)
+        a_job.save()
+    
+    for a_job in Job.objects.filter(status='Queued').order_by('queue_id'):
+        if num_dls < num_dls_at_once:
             startJob(a_job)
-        
-        elif a_job.status == 'Stopping...':
-            pauseJob(a_job)
-            a_job.process_pid = -1
-            a_job.dl_speed=0
-            a_job.status="Stopped"
-            a_job.eta = ""
-            log_to_file("Stopped: "+str(a_job.queue_id)+" "+a_job.filename)
-            a_job.save()
-                   
-        elif a_job.status == 'Running':
             num_dls = num_dls +1
-        elif a_job.status == "Queued" and num_dls < num_dls_at_once:
-            startJob(a_job)
-            num_dls = num_dls +1
+
             
     for cleanup in deamon.objects.all():
                 cleanup.delete()
@@ -328,12 +304,6 @@ def runEngine():
     engineStatus.process_pid = os.getpid()
     engineStatus.ts = datetime.datetime.now()
     engineStatus.save()
-    
-    reorder =0 
-    for a_job in Job.objects.all().order_by('queue_id'):
-        a_job.queue_id = reorder
-        a_job.save()
-        reorder += 1
             
 class Command(BaseCommand):
     def handle(self, *args, **options):
