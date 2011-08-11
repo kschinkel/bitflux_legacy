@@ -1,5 +1,6 @@
 from HTMLParser import HTMLParser
 from django.conf import settings
+from bitflux.engine.models import Job
 import re
 import httplib
 import urllib
@@ -14,11 +15,34 @@ class MyHTMLParser(HTMLParser):
         HTMLParser.__init__(self)
         self.links=[]
         self.links_with_dir=[]
-
+        self.parent_job_status = ""
+        self.parent_job_url = ""
+        self.parent_job_local_dir = ""
+        self.parent_job_autorename = False
     
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             a_link = attrs[0][1]
+            if a_link.endswith('/') and not a_link.startswith("/"):
+                new_job = Job()
+                new_job.status = self.parent_job_status
+                new_job.queue_id = len(Job.objects.all())
+                new_job.gid = -1
+                new_job.process_pid = -1
+                new_job.dl_speed = 0
+                new_job.time_seg_start = -1
+                new_job.time_seg_end = -1
+                new_job.display_size = -1
+                new_job.total_size = -1
+                new_job.dled_size = 0
+                new_job.autorename = self.parent_job_autorename
+                new_job.full_url = self.parent_job_url + a_link
+                new_job.local_directory = self.parent_job_local_dir
+                new_job.filename = name_wrapper(a_link)   
+                new_job.notes = "Directory inside a directory found " + new_job.filename
+                new_job.progress = 0;
+                new_job.eta = "";
+                new_job.save()
             if a_link.endswith('.avi') or a_link.endswith('.mp3') or a_link.endswith('.mpg') or a_link.endswith('.rar') or a_link.endswith('.zip') or a_link.endswith('.nfo') or a_link.endswith('.sfv'):
                 self.links.append(a_link)
             else:
@@ -32,7 +56,14 @@ class MyHTMLParser(HTMLParser):
             #filename = urllib.quote(filename)
             self.links_with_dir.append(dir+filename)
         return self.links_with_dir
-
+    
+    def set_parent_job(self, pJob): 
+        self.parent_job_status = pJob.status
+        self.parent_job_url = pJob.full_url
+        self.parent_job_local_dir = pJob.local_directory
+        self.parent_job_autorename = pJob.autorename
+        
+    
 def convert_bytes(bytes):
     bytes = float(bytes)
     if bytes >= 1099511627776:

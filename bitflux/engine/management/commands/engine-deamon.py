@@ -65,12 +65,16 @@ def getETA(total, already_dled, speed):
 def loadDirectory(job):
     #URLDirectory,status,request,autoRename):
     #extract the values we need later
+    myparser  = common.MyHTMLParser()
+    myparser.set_parent_job(job)
+    
     URLDirectory = job.full_url
     autoRename = job.autorename
     status = job.status
     local_dir = job.local_directory 
     #remove the directory entry
     deleteJob(job)
+    log_to_file("Attempting to load files from remote directory: " + URLDirectory)
     #continue to parse directory for entries
     m = re.match(r"(?P<type>[^:]+)://(?P<host>[^:/]+)(:(?P<port>\d+))?(?P<path>.*)", URLDirectory)
     mvals = m.groupdict()
@@ -82,10 +86,10 @@ def loadDirectory(job):
     encoded = basic_auth.encode("base64")[:-1]
     headers = {"Authorization":"Basic %s" % encoded}
     params = ""
-    myparser  = common.MyHTMLParser()
+    
     try:
         if mvals['type'] == 'https':
-            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'])
+            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
         else:
             conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
         conn.request('GET',mvals['path'],params,headers);
@@ -101,7 +105,8 @@ def loadDirectory(job):
         OUT_list = entry.split('/')
         filename = OUT_list.pop()
         filename = urllib.unquote(filename)
-
+        log_to_file("Entry in directory found:" + filename)
+        
         try:
             responce, filename, size = common.getEntryInfo(entry)
         except:
@@ -202,10 +207,10 @@ def startJob(job):
 
     
 def runEngine():
-    jobs_deleted = 0
+    jobs_deleted = False
     
     for a_job in Job.objects.filter(status__startswith='Deleting'):
-        jobs_deleted +=1
+        jobs_deleted = True
         path_to_delete = a_job.local_directory + a_job.filename
         status = a_job.status
         gid = a_job.gid
@@ -219,17 +224,12 @@ def runEngine():
                     log_to_file("Failed to delete files: " + str(e))
         log_to_file("Deleted: " + path_to_delete)
         
-    if jobs_deleted > 0:
-        reorder =0 
-        for a_job in Job.objects.all().order_by('queue_id'):
-            a_job.queue_id = reorder
-            a_job.save()
-            reorder += 1
         
     for a_job in Job.objects.filter(status__startswith='New'):
         log_to_file('new job found')
         if a_job.full_url.endswith('/'):
             #load directory
+            jobs_deleted = True
             loadDirectory(a_job)
             continue #continue, because this specific job is going to be deleted, and more created
         elif a_job.autorename:
@@ -260,7 +260,12 @@ def runEngine():
 
             
 
-    
+    if jobs_deleted:
+        reorder =0 
+        for a_job in Job.objects.all().order_by('queue_id'):
+                a_job.queue_id = reorder
+                a_job.save()
+                reorder += 1
     num_dls_at_once = 1
     num_dls = 0
  
