@@ -275,11 +275,13 @@ def runEngine():
         a_job.dl_speed = int(stats['downloadSpeed'])
         a_job.dled_size = int(stats['completedLength'])
         progress = (float(a_job.dled_size)/float(a_job.total_size))*100
-        if progress == 100:
+        if progress >= 100:
+            a_job.progress = 100
             a_job.status = 'Finished'
             a_job.dl_speed=0
             a_job.process_pid=-1
-        a_job.progress = progress
+        else:
+            a_job.progress = progress
         ETA = getETA(a_job.total_size, a_job.dled_size,  a_job.dl_speed)
         a_job.eta = common.convert_time(ETA)
         a_job.save()

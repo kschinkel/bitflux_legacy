@@ -814,11 +814,12 @@ Ext.onReady(function(){
         selModel: rowSelModel,
 
         // grid columns
-        columns:[{
+        columns:[
+        /*{
             header: "NID",
             dataIndex: 'nid',
             sortable: true
-        },
+        },*/
         {header: "Filename",
             dataIndex: 'filename',
             width: 420,
