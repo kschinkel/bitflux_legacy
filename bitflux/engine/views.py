@@ -26,6 +26,7 @@ import ctypes
 import sys
 import os
 import shutil
+import statvfs
 from HTMLParser import HTMLParser
 from datetime import datetime, timedelta
 
@@ -347,7 +348,7 @@ def newdir(request):
 def removeEntry(request):
     entry = request.POST.get('rmEntry')
     entry = settings.LOCAL_DIR.rstrip('/') + entry
-    if dir is not None and dir !='':
+    if entry is not None and entry !='':
         try:
             os.remove(entry)
         except OSError:
@@ -360,6 +361,27 @@ def removeEntry(request):
         value = 'Invalid Entry name'
     return HttpResponse(json.dumps(value),mimetype="application/json")
     
+@login_required
+def renameEntry(request):
+    entry = request.POST.get('renameEntry')
+    newName = request.POST.get('newName')
+    entry = settings.LOCAL_DIR.rstrip('/') + entry
+    path_list = entry.split('/')
+    old_name = path_list.pop()
+    path_list.append(newName)
+    newName = '/'.join(path_list)
+    if entry is not None and entry !='':
+        try:
+            os.rename(entry,newName)
+        except OSError:
+            return HttpResponse(json.dumps("Unable to rename entry: " + entry +", to "+newName),mimetype="application/json")
+        value = 'Renamed Entry: ' + entry +", to " + newName
+    else:
+        value = 'Invalid Entry name'
+    return HttpResponse(json.dumps(value),mimetype="application/json")
+
+
+
 @login_required
 def listAutoDLs(request):
     objList = []
@@ -468,5 +490,10 @@ def listDirContents(request):
     
     return HttpResponse(json.dumps(dataObj),mimetype="application/json")
 
-
-    
+@login_required
+def getRemainingSpace(request):
+    f = os.statvfs(settings.LOCAL_DIR)
+    space_free = f.f_bsize * f.f_bavail
+    space_free=convert_bytes(space_free)
+    dataObj = { 'remaining' : space_free}
+    return HttpResponse(json.dumps(dataObj))

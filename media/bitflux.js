@@ -27,6 +27,22 @@ var CWD;
 var selectEntry = null;
 var canChangeDir = true;
 
+var updateFreeSpace = function(){
+    postData =""
+    Ext.Ajax.request({
+       url: '/freespace/',
+       method: 'POST',
+       params: postData,
+       success: function(response, opts) {
+          var obj = Ext.decode(response.responseText);
+          fileBrowser.getBottomToolbar().getComponent('free_space').setText(obj["remaining"])
+       },
+       failure: function(response, opts) {
+          console.log('server-side failure with status code ' + response.status);
+       }
+    });
+}
+
 var mkNewDir = function(){
     dirName = Ext.getCmp('mkDir').getValue();
     if (dirName != "New Folder"){
@@ -79,7 +95,39 @@ var delEntry = function(){
         });
     }
 };
-
+var renameEntry = function(){
+    dirName = Ext.getCmp('mkDir').getValue();
+    if (dirName != "New Folder"){
+        selectEntry = Ext.getCmp('mkDir').getValue();
+        Ext.getCmp('mkDir').setValue("New Folder");
+        
+        var sel = fileBrowser.selModel.getSelected();
+        if(sel != null){
+            title = "Rename Entry";
+            msg = "Are you sure you want to rename: " + sel.data.entryName.toString() + " to " + dirName;
+            Ext.Msg.confirm( "Rename Entry", msg,  function(btn){
+                postData = 'renameEntry=' + CWD + sel.data.entryName.toString() + '&newName='+dirName;
+                if (btn == 'yes'){
+                    Ext.Ajax.request({
+                       url: '/renameEntry/?',
+                       method: 'POST',
+                       params: postData,
+                       success: function(response, opts) {
+                            dirStore.reload({
+                                params: {
+                                    'currentDir': CWD
+                                }
+                           });
+                       },
+                       failure: function(response, opts) {
+                          console.log('server-side failure with status code ' + response.status);
+                       }
+                    });
+                }
+            });
+        }
+    }//end check if name is New Folder//
+}
 var updateEngineStatus = function(){
 	var randomnumber=Math.floor(Math.random()*100);
 	$.getJSON('/enginestatus/?'+randomnumber, function(data) { 
@@ -418,7 +466,9 @@ Ext.onReady(function(){
                         fileBrowser.getView().focusRow(index);
                         selectEntry = null;
                     }
-
+                    
+                    /*Make request for free space here*/
+                    updateFreeSpace();                   
                 }
             },
             scope: this,
@@ -525,12 +575,22 @@ Ext.onReady(function(){
                 '-'
                 ,{text: 'Del Entry',
                     handler: delEntry
-                }
-                
+                },
+                '-'
+                ,{text: 'Rename Entry',
+                    handler: renameEntry
+                },
+                '->',
+                {xtype:'label',
+                    text:'Remaining Space:'},
+                {xtype:'tbtext',
+                    text:'-',
+                    id: 'free_space'
+                }                
             ]            
         })
     });
-        
+    
     changeDir = new Ext.Window({
         title: 'Change Directory',
         plain: true,
@@ -947,11 +1007,14 @@ initialize = function() {
 	   }
 	});
     
+    //fileBrowser.getBottomToolbar().doLayout();
+    
     //CWD = "/";
     store.setDefaultSort('queue_id', 'ASC'); //'ASC' or 'DESC'
     
     tabs.setActiveTab(0);
 	store.load({params:{start:0, limit:20}});
 	window.setInterval('updateDisplay()',1000);
+    updateFreeSpace(); 
 };
 
