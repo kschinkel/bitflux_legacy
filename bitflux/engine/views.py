@@ -155,7 +155,7 @@ def autodlnew(request):
 
     
 @login_required
-def myview(request):
+def dlList(request):
     start = int(request.GET.get('start',0))
     limit = int(request.GET.get('limit',2))
     
@@ -172,7 +172,8 @@ def myview(request):
                     'progress' : a_job.progress,
                     'eta' : a_job.eta,
                     'pid' : a_job.process_pid,
-                    'nid'  : a_job.id
+                    'nid'  : a_job.id,
+					'path' : a_job.local_directory.replace(settings.LOCAL_DIR,"")
                     }
         objList.append(a_obj)
         
@@ -422,7 +423,7 @@ def download(request):
     file_list = path.split('/')
     filename = file_list.pop();
     response = HttpResponse(open(path))
-    response['Content-Disposition'] = 'attachment; filename='+filename
+    response['Content-Disposition'] = 'attachment; filename="'+filename+'"'
     response['Content-Length'] = os.path.getsize(path)
     return response
     

@@ -17,6 +17,7 @@ var statusG = '<img src="/site_media/good.gif" />';
 var grid;
 var dirStore;
 var fileBrowser;
+var fileBrowserSelModel = new Ext.grid.RowSelectionModel({singleSelect:true});
 var changeDir;
 var autoDLBrowser;
 var autoDLStore;
@@ -157,44 +158,44 @@ var rowSelModel = new Ext.grid.RowSelectionModel({
     singleSelect:false,
     listeners: {
         rowselect: function(smObj, rowIndex, record) {
-                if(record.data.queue_id !=0){
-                    //controlBar.items.get(8).enable();
-                    Ext.getCmp('qUp').enable();
-                }else{
-                    //controlBar.items.get(8).disable();
-                    Ext.getCmp('qUp').disable();
-                }
-                if(record.data.queue_id < store.getTotalCount()-1){
-                    //controlBar.items.get(9).enable();
-                    Ext.getCmp('qDown').enable();
-                }else{
-                    //controlBar.items.get(9).disable();
-                    Ext.getCmp('qDown').disable();
-                }
-                if(record.data.status == 'Stopped'){
-                    Ext.getCmp('startBtn').enable();
-                    Ext.getCmp('stopBtn').disable();
-                    //controlBar.items.get(3).enable();
-                    //controlBar.items.get(4).disable();
-                }else if(record.data.status == 'Running'){
-                    Ext.getCmp('startBtn').disable();
-                    Ext.getCmp('stopBtn').enable();
-                    //controlBar.items.get(3).disable();
-                    //controlBar.items.get(4).enable();
-                }else if(record.data.status == 'Queued'){
-                    Ext.getCmp('startBtn').enable();
-                    Ext.getCmp('stopBtn').enable();
-                }else{
-                    Ext.getCmp('startBtn').disable();
-                    Ext.getCmp('stopBtn').disable();
-                }
-            if(selRecordList.indexOf(record.data.nid) == -1){
-                selRecordList.push(record.data.nid);
-            }
+			if(record.data.queue_id !=0){
+				//controlBar.items.get(8).enable();
+				Ext.getCmp('qUp').enable();
+			}else{
+				//controlBar.items.get(8).disable();
+				Ext.getCmp('qUp').disable();
+			}
+			if(record.data.queue_id < store.getTotalCount()-1){
+				//controlBar.items.get(9).enable();
+				Ext.getCmp('qDown').enable();
+			}else{
+				//controlBar.items.get(9).disable();
+				Ext.getCmp('qDown').disable();
+			}
+			if(record.data.status == 'Stopped'){
+				Ext.getCmp('startBtn').enable();
+				Ext.getCmp('stopBtn').disable();
+				//controlBar.items.get(3).enable();
+				//controlBar.items.get(4).disable();
+			}else if(record.data.status == 'Running'){
+				Ext.getCmp('startBtn').disable();
+				Ext.getCmp('stopBtn').enable();
+				//controlBar.items.get(3).disable();
+				//controlBar.items.get(4).enable();
+			}else if(record.data.status == 'Queued'){
+				Ext.getCmp('startBtn').enable();
+				Ext.getCmp('stopBtn').enable();
+			}else{
+				Ext.getCmp('startBtn').disable();
+				Ext.getCmp('stopBtn').disable();
+			}
+		if(selRecordList.indexOf(record.data.nid) == -1){
+			selRecordList.push(record.data.nid);
+		}
         },
-        rowdeselect : function(smObj, rowIndex, record) {
-            selRecordList.pop(record.data.nid);
-        }
+		rowdeselect : function(smObj, rowIndex, record) {
+			selRecordList.pop(record.data.nid);
+		}
     }
 });
 
@@ -377,11 +378,11 @@ Ext.onReady(function(){
         root: 'downloads',
         totalProperty: 'total',
         fields: [
-            'filename', 'total_size','queue_id','status','dl_speed','progress','eta','pid', 'nid'
+            'filename', 'total_size','queue_id','status','dl_speed','progress','eta','pid', 'nid', 'path'
         ],
 
         proxy: new Ext.data.HttpProxy({
-            url: '/myview/?',
+            url: '/dlList/?',
             method: 'GET'
         }),
         listeners: {
@@ -439,7 +440,6 @@ Ext.onReady(function(){
                                     fn:  function(obj) {
                                         path = obj.getId();
                                         path = path.substr(1);
-                                        //bytehive.files.selectByButton(obj);
                                         CWD = path;
                                         canChangeDir = false;
                                         dirStore.reload({
@@ -461,12 +461,14 @@ Ext.onReady(function(){
                     //Ext.getCmp('workingDir').update(workingDir);
                     
                     if (selectEntry != null){
-                        var index = dirStore.findExact('entryName',selectEntry);                     
+						tabs.setActiveTab(1);
+						fileBrowser.doLayout();
+                        var index = dirStore.findExact('entryName',selectEntry);
                         fileBrowser.getSelectionModel().selectRow(index);               
                         fileBrowser.getView().focusRow(index);
                         selectEntry = null;
                     }
-                    
+  
                     /*Make request for free space here*/
                     updateFreeSpace();                   
                 }
@@ -503,7 +505,7 @@ Ext.onReady(function(){
         store: dirStore,
         trackMouseOver:false,
         disableSelection:true,
-        selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
+        selModel: fileBrowserSelModel,
         // grid columns
         /*{header: "Dir?",
             dataIndex: 'isDir',
@@ -872,7 +874,7 @@ Ext.onReady(function(){
         trackMouseOver:false,
         disableSelection:true,
         selModel: rowSelModel,
-
+		
         // grid columns
         columns:[
         /*{
@@ -924,7 +926,31 @@ Ext.onReady(function(){
         viewConfig: {
             forceFit:true
         },
-
+		listeners: {
+            'rowdblclick':{
+                fn:function(obj,row,ev){
+                    the_entry = obj.getStore().getAt(row);
+                    if ( canChangeDir){
+                        CWD =  the_entry.data.path;
+                        //CWD += param;
+                        canChangeDir = false;
+						selectEntry = the_entry.data.filename;
+                        dirStore.reload({
+                            params: {
+                                'currentDir': CWD
+                            }
+                        });
+						//TBD: change focus to filebrowser here
+						/*tabs.setActiveTab(1);
+						var index = dirStore.findExact('entryName',the_entry.data.filename);                     
+						fileBrowser.getSelectionModel().selectRow(index);               
+						fileBrowser.getView().focusRow(index);*/
+					}
+                },
+                scope:this,
+                delay:100
+            }
+        },
         // paging bar on the bottom
         bbar: new Ext.PagingToolbar({
             pageSize: 20,

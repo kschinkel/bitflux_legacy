@@ -8,7 +8,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
 	(r'^admin/', include(admin.site.urls)),
     (r'^/?$', 'bitflux.engine.views.index'),
-    (r'^myview/$', 'bitflux.engine.views.myview'),
+    (r'^dlList/$', 'bitflux.engine.views.dlList'),
 	(r'^autoDLList/', 'bitflux.engine.views.listAutoDLs'),
 	(r'^dirList/', 'bitflux.engine.views.listDirContents'),
 	(r'^enginestatus/$', 'bitflux.engine.views.enginestatus'),
