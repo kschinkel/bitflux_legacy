@@ -57,11 +57,11 @@ class MyHTMLParser(HTMLParser):
             self.links_with_dir.append(dir+filename)
         return self.links_with_dir
     
-    def set_parent_job(self, pJob): 
-        self.parent_job_status = pJob.status
-        self.parent_job_url = pJob.full_url
-        self.parent_job_local_dir = pJob.local_directory
-        self.parent_job_autorename = pJob.autorename
+    def set_parent_info(self, full_url, local_directory, status, autorename): 
+        self.parent_job_status = status
+        self.parent_job_url = full_url
+        self.parent_job_local_dir = local_directory
+        self.parent_job_autorename = autorename
         
     
 def convert_bytes(bytes):

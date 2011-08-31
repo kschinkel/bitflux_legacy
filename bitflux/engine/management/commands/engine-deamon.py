@@ -49,7 +49,7 @@ ARIA2C = subprocess.Popen(ARIA2C_ARGS,stdout=subprocess.PIPE,stderr=subprocess.P
 s = xmlrpclib.ServerProxy('http://' + XML_RPC_USER + ':' + XML_RPC_PASS + '@localhost:6800/rpc')
 def log_to_file(msg):
     f = open(settings.ENGINE_LOG, 'a')
-    f.write(str(datetime.datetime.now())+": "+msg+"\n")
+    f.write(str(datetime.datetime.now())+": "+msg.encode('utf8')+"\n")
     f.close
 
     
@@ -229,9 +229,13 @@ def runEngine():
         log_to_file('new job found')
         if a_job.full_url.endswith('/'):
             #load directory
-            jobs_deleted = True
-            loadDirectory(a_job)
-            continue #continue, because this specific job is going to be deleted, and more created
+			jobs_deleted = True
+			#loadDirectory(a_job) #old way of loading directory
+			args = ['python','manage.py','load-dir',a_job.full_url, a_job.local_directory, a_job.status, str(a_job.autorename) ]
+			a_job.delete()
+			load_dir_process = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+			
+			continue #continue, because this specific job is going to be deleted, and more created
         elif a_job.autorename:
             show_name = common.is_tv_show(a_job.filename)
             if len(show_name) > 0:
