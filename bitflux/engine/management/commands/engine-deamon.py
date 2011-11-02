@@ -236,8 +236,10 @@ def runEngine():
 			load_dir_process = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 			
 			continue #continue, because this specific job is going to be deleted, and more created
-        elif a_job.autorename:
-            show_name = common.is_tv_show(a_job.filename)
+        else:
+            args = ['python','manage.py','file-stats',str(a_job.id)]
+            file_stats_process = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            '''show_name = common.is_tv_show(a_job.filename)
             if len(show_name) > 0:
                a_job.filename = common.name_wrapper(show_name)
                #a_job.filename = unicode(show_name, errors='ignore')
@@ -260,7 +262,7 @@ def runEngine():
             a_job.save()
         elif a_job.status.endswith('Start'):
             a_job.status = 'Starting...'
-            a_job.save()
+            a_job.save()'''
 
             
 

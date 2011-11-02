@@ -88,7 +88,10 @@ def email_notification(dl_name,email_address):
     
 def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir,size):
     #out = dl_dir + filename
-    filename = unicode(filename, errors='ignore')
+    try:
+        filename = unicode(filename, errors='ignore')
+    except TypeError:   #if type error occurs, just pass, use filename untouched
+        pass
     #Create the new Job
     new_job = Job()
     new_job.status = 'Queued'
@@ -171,6 +174,9 @@ def search_server_feed(full_torrent_listing):
                                 
                                 tv_show_rename += "." + URLS[0]["type"]
                                 log_to_file("Found Show to DL: "+tv_show_rename)
+                                #
+                                #There has been a failure after this point, seems to be when the TV show is not named properly
+                                #
                                 newDLtoAdd(URLS[0]["URL"],a_show.id,tv_show_rename, season_found ,episode_found, a_show.dl_dir,URLS[0]["size"])
                                 #send email notifications
                                 for email_addr in settings.EMAIL_TO_LIST:

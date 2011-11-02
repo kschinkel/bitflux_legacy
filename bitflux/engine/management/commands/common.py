@@ -43,7 +43,7 @@ class MyHTMLParser(HTMLParser):
                 new_job.progress = 0;
                 new_job.eta = "";
                 new_job.save()
-            if a_link.endswith('.avi') or a_link.endswith('.mp3') or a_link.endswith('.mpg') or a_link.endswith('.rar') or a_link.endswith('.zip') or a_link.endswith('.nfo') or a_link.endswith('.sfv'):
+            if a_link.endswith('.avi') or a_link.endswith('.mp3') or a_link.endswith('.mp4') or a_link.endswith('.mpg') or a_link.endswith('.rar') or a_link.endswith('.zip') or a_link.endswith('.nfo') or a_link.endswith('.sfv'):
                 self.links.append(a_link)
             else:
                 is_rar_archieve = re.match(".*\.r[0-9]*$", a_link)
