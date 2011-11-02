@@ -59,16 +59,16 @@ def file_stats(id):
     status, filename, size = common.getEntryInfo(a_job.full_url)
     a_job.total_size = size
     a_job.display_size = common.convert_bytes(a_job.total_size)
-    a_job.save()
+    
+    log_to_file("Updating status for: " + a_job.filename)
     if a_job.status.endswith('Queue'):
         a_job.status = 'Queued'
-        a_job.save()
     elif a_job.status.endswith('Stop'):
         a_job.status = 'Stopped'
-        a_job.save()
     elif a_job.status.endswith('Start'):
         a_job.status = 'Starting...'
-        a_job.save()
+    a_job.save()    
+    log_to_file("Finished with for: " + a_job.filename)    
         
 class Command(BaseCommand):
     def handle(self, *args, **options):

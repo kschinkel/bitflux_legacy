@@ -237,6 +237,14 @@ def runEngine():
 			
 			continue #continue, because this specific job is going to be deleted, and more created
         else:
+            if a_job.status.endswith('Queue'):
+                a_job.status = 'Stats; Queue'
+            elif a_job.status.endswith('Stop'):
+                a_job.status = 'Stats; Stop'
+            elif a_job.status.endswith('Start'):
+                a_job.status = 'Stats; Start'
+                
+            a_job.save()
             args = ['python','manage.py','file-stats',str(a_job.id)]
             file_stats_process = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             '''show_name = common.is_tv_show(a_job.filename)

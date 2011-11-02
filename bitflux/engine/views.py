@@ -346,11 +346,10 @@ def index(request):
                 returnlist.append(int(a_check))
             if 'cleanup' in request.POST:
                 the_action="Cleaned Up";
-                for a_job in Job.objects.all():
-                    if a_job.status == 'Finished':
-                        a_job.status = 'Deleting...'
-                        a_job.save()
-                        returnlist.append(a_job.id)
+                for a_job in Job.objects.filter(status='Finished'):
+                    a_job.status = 'Deleting...'
+                    a_job.save()
+                    returnlist.append(a_job.id)
             return HttpResponse(Context( {'action_performed':the_action,'list':returnlist} ))
         #return HttpResponse(Context( {'status':'Nothing was done'} ))
     
