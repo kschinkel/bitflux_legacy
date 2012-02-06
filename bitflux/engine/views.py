@@ -33,16 +33,16 @@ from datetime import datetime, timedelta
 
 # list of mobile User Agents
 mobile_uas = [
-	'w3c ','acs-','alav','alca','amoi','audi','avan','benq','bird','blac',
-	'blaz','brew','cell','cldc','cmd-','dang','doco','eric','hipt','inno',
-	'ipaq','java','jigs','kddi','keji','leno','lg-c','lg-d','lg-g','lge-',
-	'maui','maxo','midp','mits','mmef','mobi','mot-','moto','mwbp','nec-',
-	'newt','noki','oper','palm','pana','pant','phil','play','port','prox',
-	'qwap','sage','sams','sany','sch-','sec-','send','seri','sgh-','shar',
-	'sie-','siem','smal','smar','sony','sph-','symb','t-mo','teli','tim-',
-	'tosh','tsm-','upg1','upsi','vk-v','voda','wap-','wapa','wapi','wapp',
-	'wapr','webc','winw','winw','xda','xda-'
-	]
+    'w3c ','acs-','alav','alca','amoi','audi','avan','benq','bird','blac',
+    'blaz','brew','cell','cldc','cmd-','dang','doco','eric','hipt','inno',
+    'ipaq','java','jigs','kddi','keji','leno','lg-c','lg-d','lg-g','lge-',
+    'maui','maxo','midp','mits','mmef','mobi','mot-','moto','mwbp','nec-',
+    'newt','noki','oper','palm','pana','pant','phil','play','port','prox',
+    'qwap','sage','sams','sany','sch-','sec-','send','seri','sgh-','shar',
+    'sie-','siem','smal','smar','sony','sph-','symb','t-mo','teli','tim-',
+    'tosh','tsm-','upg1','upsi','vk-v','voda','wap-','wapa','wapi','wapp',
+    'wapr','webc','winw','winw','xda','xda-'
+    ]
  
 mobile_ua_hints = [ 'SymbianOS', 'Opera Mini', 'iPhone' ]
  
@@ -196,8 +196,6 @@ def dlList(request):
     objList = []
     for a_job in Job.objects.all():
         display_dl_speed = convert_bytes(a_job.dl_speed)+'ps'
-        '''name_list = a_job.filename.split("/")
-        name = name_list[len(name_list)-1]'''
         a_obj =  {'filename':a_job.filename,
                     'total_size' : a_job.display_size,
                     'queue_id' : a_job.queue_id,
@@ -207,10 +205,11 @@ def dlList(request):
                     'eta' : a_job.eta,
                     'pid' : a_job.process_pid,
                     'nid'  : a_job.id,
-					'path' : a_job.local_directory.replace(settings.LOCAL_DIR,"")
+                    'path' : a_job.local_directory.replace(settings.LOCAL_DIR,"")
                     }
         objList.append(a_obj)
-        
+
+    
     objList2 = objList
     end = start + limit
     if end > len(objList):
@@ -263,52 +262,65 @@ def index(request):
                 profile.user = request.user
                 profile.dl_dir = settings.LOCAL_DIR
                 profile.save()
-            new_job = Job()
-            new_job.autorename = autoRename
-            filename = urllib.unquote(filename)
-            size = 0
-            new_job.queue_id = len(Job.objects.all())
-            new_job.process_pid = -1
-            new_job.dl_speed = 0
-            new_job.gid = -1
-            new_job.time_seg_start = time.time()
-            new_job.time_seg_end = new_job.time_seg_start
-            new_job.display_size = convert_bytes(size)
-            new_job.total_size = size
-            new_job.dled_size = 0
-            new_job.full_url = full_dl_path
-            new_job.local_directory = profile.dl_dir
-            new_job.filename = filename
-            new_job.notes = "CURL download: " + new_job.local_directory + new_job.filename
-            new_job.progress = 0
-            new_job.status = status
-            new_job.eta = ""
-            new_job.save()
+            
+            try:
+                Job.objects.lock()
+                new_job = Job()
+                new_job.autorename = autoRename
+                filename = urllib.unquote(filename)
+                size = 0
+                new_job.queue_id = len(Job.objects.all())
+                new_job.process_pid = -1
+                new_job.dl_speed = 0
+                new_job.gid = -1
+                new_job.time_seg_start = time.time()
+                new_job.time_seg_end = new_job.time_seg_start
+                new_job.display_size = convert_bytes(size)
+                new_job.total_size = size
+                new_job.dled_size = 0
+                new_job.full_url = full_dl_path
+                new_job.local_directory = profile.dl_dir
+                new_job.filename = filename
+                new_job.notes = "CURL download: " + new_job.local_directory + new_job.filename
+                new_job.progress = 0
+                new_job.status = status
+                new_job.eta = ""
+                new_job.save()
+            finally:
+                Job.objects.unlock()
             returnlist = ['Added entry',filename];
             return HttpResponse(Context( {'action_performed':the_action,'list':returnlist} ))
             
         elif 'up' in request.POST:
             nid = request.POST.get('up')   
             if int(nid) != 0:
-                job1 = Job.objects.get(id=int(nid))
-                prev_id = job1.queue_id
-                job1.queue_id = job1.queue_id -1
-                job2 = Job.objects.get(queue_id=prev_id-1)
-                job2.queue_id = job2.queue_id +1
-                job1.save()
-                job2.save()
+                try:
+                    Job.objects.lock()
+                    job1 = Job.objects.get(id=int(nid))
+                    prev_id = job1.queue_id
+                    job1.queue_id = job1.queue_id -1
+                    job2 = Job.objects.get(queue_id=prev_id-1)
+                    job2.queue_id = job2.queue_id +1
+                    job1.save()
+                    job2.save()
+                finally:
+                    Job.objects.unlock()
             
         elif 'down' in request.POST:
             nid = request.POST.get('down')
             selected = Job.objects.get(id=int(nid))
             down_id = selected.queue_id
             if int(down_id) != len(Job.objects.all())-1:
-                job1 = Job.objects.get(queue_id=int(down_id))
-                job1.queue_id = job1.queue_id +1
-                job2 = Job.objects.get(queue_id=int(down_id)+1)
-                job2.queue_id = job2.queue_id -1
-                job1.save()
-                job2.save()
+                try:
+                    Job.objects.lock()
+                    job1 = Job.objects.get(queue_id=int(down_id))
+                    job1.queue_id = job1.queue_id +1
+                    job2 = Job.objects.get(queue_id=int(down_id)+1)
+                    job2.queue_id = job2.queue_id -1
+                    job1.save()
+                    job2.save()
+                finally:
+                    Job.objects.unlock()
         elif 'Action' in request.POST:
             returnlist = [];
             the_action ="";
@@ -317,39 +329,42 @@ def index(request):
             check_list_start = request.POST.getlist('start')
             check_list_queue = request.POST.getlist('queue')
             
-            
-            for a_check in check_list_queue:
-                a_job = Job.objects.get(id=int(a_check))
-                a_job.status = "Queued"
-                a_job.save()
-            for a_check in check_list_stop:
-                the_action="Stopped";
-                a_job = Job.objects.get(id=int(a_check))
-                returnlist.append(int(a_check))
-                a_job.status = "Stopping...";
-                a_job.save();        
-            for a_check in check_list_del:
-                a_job = Job.objects.get(id=int(a_check))
-                if 'DelWData' in request.POST:
-                    a_job.status="Deleting With Data..."
-                    the_action="Deleted With Data";
-                else:
-                    a_job.status="Deleting..."
-                    the_action="Deleted";
-                returnlist.append(int(a_check))
-                a_job.save()
-            for a_check in check_list_start:
-                the_action="Started";
-                a_job = Job.objects.get(id=int(a_check))
-                a_job.status = "Starting..."
-                a_job.save()
-                returnlist.append(int(a_check))
-            if 'cleanup' in request.POST:
-                the_action="Cleaned Up";
-                for a_job in Job.objects.filter(status='Finished'):
-                    a_job.status = 'Deleting...'
+            try:
+                Job.objects.lock()
+                for a_check in check_list_queue:
+                    a_job = Job.objects.get(id=int(a_check))
+                    a_job.status = "Queued"
                     a_job.save()
-                    returnlist.append(a_job.id)
+                for a_check in check_list_stop:
+                    the_action="Stopped";
+                    a_job = Job.objects.get(id=int(a_check))
+                    returnlist.append(int(a_check))
+                    a_job.status = "Stopping...";
+                    a_job.save();        
+                for a_check in check_list_del:
+                    a_job = Job.objects.get(id=int(a_check))
+                    if 'DelWData' in request.POST:
+                        a_job.status="Deleting With Data..."
+                        the_action="Deleted With Data";
+                    else:
+                        a_job.status="Deleting..."
+                        the_action="Deleted";
+                    returnlist.append(int(a_check))
+                    a_job.save()
+                for a_check in check_list_start:
+                    the_action="Started";
+                    a_job = Job.objects.get(id=int(a_check))
+                    a_job.status = "Starting..."
+                    a_job.save()
+                    returnlist.append(int(a_check))
+                if 'cleanup' in request.POST:
+                    the_action="Cleaned Up";
+                    for a_job in Job.objects.filter(status='Finished'):
+                        a_job.status = 'Deleting...'
+                        a_job.save()
+                        returnlist.append(a_job.id)
+            finally:
+                Job.objects.unlock()
             return HttpResponse(Context( {'action_performed':the_action,'list':returnlist} ))
         #return HttpResponse(Context( {'status':'Nothing was done'} ))
     

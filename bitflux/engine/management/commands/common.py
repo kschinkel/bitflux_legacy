@@ -24,25 +24,29 @@ class MyHTMLParser(HTMLParser):
         if tag == 'a':
             a_link = attrs[0][1]
             if a_link.endswith('/') and not a_link.startswith("/"):
-                new_job = Job()
-                new_job.status = self.parent_job_status
-                new_job.queue_id = len(Job.objects.all())
-                new_job.gid = -1
-                new_job.process_pid = -1
-                new_job.dl_speed = 0
-                new_job.time_seg_start = -1
-                new_job.time_seg_end = -1
-                new_job.display_size = -1
-                new_job.total_size = -1
-                new_job.dled_size = 0
-                new_job.autorename = self.parent_job_autorename
-                new_job.full_url = self.parent_job_url + a_link
-                new_job.local_directory = self.parent_job_local_dir
-                new_job.filename = name_wrapper(a_link)   
-                new_job.notes = "Directory inside a directory found " + new_job.filename
-                new_job.progress = 0;
-                new_job.eta = "";
-                new_job.save()
+                try:
+                    Job.objects.lock() 
+                    new_job = Job()
+                    new_job.status = self.parent_job_status
+                    new_job.queue_id = len(Job.objects.all())
+                    new_job.gid = -1
+                    new_job.process_pid = -1
+                    new_job.dl_speed = 0
+                    new_job.time_seg_start = -1
+                    new_job.time_seg_end = -1
+                    new_job.display_size = -1
+                    new_job.total_size = -1
+                    new_job.dled_size = 0
+                    new_job.autorename = self.parent_job_autorename
+                    new_job.full_url = self.parent_job_url + a_link
+                    new_job.local_directory = self.parent_job_local_dir
+                    new_job.filename = name_wrapper(a_link)   
+                    new_job.notes = "Directory inside a directory found " + new_job.filename
+                    new_job.progress = 0;
+                    new_job.eta = "";
+                    new_job.save()
+                finally:
+                    Job.objects.unlock()
             if a_link.endswith('.avi') or a_link.endswith('.mp3') or a_link.endswith('.mp4') or a_link.endswith('.mpg') or a_link.endswith('.rar') or a_link.endswith('.zip') or a_link.endswith('.nfo') or a_link.endswith('.sfv'):
                 self.links.append(a_link)
             else:
@@ -156,9 +160,9 @@ def getContentLength(URL):
     params = ""
     try:
         if mvals['type'] == 'https':
-            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=10)
+            conn = httplib.HTTPSConnection(mvals['host'],mvals['port'], timeout=30)
         else:
-            conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
+            conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=30)
         conn.request('GET',mvals['path'],params,headers);
         responce = conn.getresponse()
         size = responce.getheader("content-length")
@@ -183,15 +187,17 @@ def get_espisode_info(name, season, episode):
     if mvals['port'] is None:
         mvals['port'] = 80
     try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=30)
+        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=60)
         conn.request('GET',mvals['path'],"");
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
         conn.close()
     except Exception,e:
-        #log_to_file("get_espisode_info: Failed to retrieve show name using URL: " + full_URL)
-        #log_to_file("get_espisode_info: Exception was value: " + str(e))
-        return "" , ""
+        show_name = name
+        show_name += " S" + str(season).zfill(2)
+        show_name += " E" + str(episode).zfill(2)
+        #show_name += name[name.rfind("."):]
+        return show_name        
         
     start_episode_info =  fullhtmlpage.find("Episode Info")
     sub_string1 = fullhtmlpage[start_episode_info:]
@@ -206,16 +212,41 @@ def get_espisode_info(name, season, episode):
     sub_string2 = sub_string1[start_episode_name+1:]
     end_episode_name = sub_string2.find("\n")
     show_name = sub_string1[start_episode_name+1:end_episode_name+start_episode_name+1]
-    return show_name, episode_name  
     
-    
+    show_name += " S" + str(season).zfill(2)
+    show_name += " E" + str(episode).zfill(2)
+    show_name +=  " - " + episode_name
+    #show_name += name[name.rfind("."):]
+    return show_name    
+    #return show_name, episode_name  
+        
     
 def is_tv_show(param):
     raw_name = param.encode('ascii', 'ignore')
     raw_name = raw_name.replace(' ','.');
     raw_name = raw_name.lower()
 
-    extract_SE = re.match("(.*)[sS](\\d{2})[eE](\\d{2}).*\.avi$", raw_name)
+    extract_SE = re.match("(.*)[sS](\\d{2})[eE](\\d{2}).*", raw_name)
+    if extract_SE is None:
+        #print 'failed match 1'
+        extract_SE = re.match("(.*)[sS](\\d{1})[eE](\\d{2}).*", raw_name)
+        if extract_SE is None:
+            #print 'failed match 2'
+            extract_SE = re.match("(.*)[sS](\\d{1})[eE]?(\\d{1}).*", raw_name)
+            if extract_SE is None:
+                #print 'failed match 3'
+                extract_SE = re.match("(.*)(\\d{2})[xX](\\d{2}).*", raw_name)
+                if extract_SE is None:
+                    #print 'failed match 4'
+                    extract_SE = re.match("(.*)(\\d{1})[xX](\\d{2}).*", raw_name)
+                    if extract_SE is None:
+                        #print 'failed match 5'
+                        extract_SE = re.match("(.*)(\\d{1})[xX](\\d{1}).*", raw_name)
+                        if extract_SE is None:
+                            #print 'failed match 6'
+                            #This does not match a show
+                            return "", -1, -1
+    '''    extract_SE = re.match("(.*)[sS](\\d{2})[eE](\\d{2}).*\.avi$", raw_name)
     if extract_SE is None:
         #print 'failed match 1'
         extract_SE = re.match("(.*)[sS](\\d{1})[eE](\\d{2}).*\.avi$", raw_name)
@@ -234,14 +265,18 @@ def is_tv_show(param):
                         if extract_SE is None:
                             #print 'failed match 6'
                             #This does not match a show
-                            return ""
+                            return "", -1, -1'''
+    
+    
     show_group = extract_SE.groups()
     extracted_name = show_group[0]
     extracted_season = int(show_group[1])
     extracted_episode = int(show_group[2])
     extracted_name = extracted_name.replace('.',' ')
     extracted_name = extracted_name.replace('-',' ')
-    proper_show_name, proper_episode_name = get_espisode_info(extracted_name, extracted_season, extracted_episode)
+    return extracted_name, extracted_season, extracted_episode
+    
+    '''proper_show_name, proper_episode_name = get_espisode_info(extracted_name, extracted_season, extracted_episode)
 
     if len(proper_show_name) == 0 or len(proper_episode_name) == 0 :
         return ""
@@ -250,7 +285,7 @@ def is_tv_show(param):
     proper_show_name += " E" + str(extracted_episode).zfill(2)
     proper_show_name +=  " - " + proper_episode_name
     proper_show_name += raw_name[raw_name.rfind("."):]
-    return proper_show_name
+    return proper_show_name'''
   
   
 def format_movie(raw_name):
@@ -284,17 +319,17 @@ def is_movie(raw_name):
         mvals['port'] = 80
     fullhtmlpage = ""
     try:
-        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=10)
+        conn = httplib.HTTPConnection(mvals['host'],mvals['port'], timeout=30)
         conn.request('GET',mvals['path'],"");
         responce = conn.getresponse()
         fullhtmlpage = responce.read()
+        result = json.loads(fullhtmlpage)
         conn.close()
     except Exception,e:
         #log_to_file("is_movie: Failed to retrieve show name using URL: " + api_url)
         #log_to_file("is_movie: Exception was value: " + str(e))
         return ""
     
-    result = json.loads(fullhtmlpage)
     if result['Response'] == "Parse Error":
         return ""
     format =  result['Title'] + " (" + result['Year'] + ")"

@@ -271,6 +271,7 @@ Ext.override(Ext.grid.GridView, {
 });
 
 Ext.onReady(function(){
+
     controlBar = new Ext.Toolbar({
         region: 'south',
         width:1000,
@@ -618,14 +619,18 @@ Ext.onReady(function(){
         height:350,
         title:'Auto DL Browser',
         region: 'east',
-        collapsible : true,
+        collapsible: true,
+        split: true,
+        animFloat: false,
+        autoHide: false,
+        useSplitTips: true,
         collapsed : true,
+        floatable: false,
         store: autoDLStore,
         trackMouseOver:false,
         disableSelection:true,
         id : 'autoDLerPanel',
         selModel: new Ext.grid.RowSelectionModel({singleSelect:true}),
-
         // grid columns
         columns:[{header: "Entry Name",
             width:150,
@@ -703,7 +708,19 @@ Ext.onReady(function(){
                 },
                 scope:this,
                 delay:100
-            }
+            },
+            'beforehide' : function(t) {
+                console.log('beforehide');
+            },
+            'beforecollapse': function(p, a) {
+                console.log('beforecollapse');
+            },
+            'beforeclose': function(p, a) {
+                console.log('beforeclose');
+            },
+            'beforeexpand': function(p, a) {
+                console.log('beforeexpand');
+            },
         }
     });
         
@@ -874,7 +891,6 @@ Ext.onReady(function(){
         trackMouseOver:false,
         disableSelection:true,
         selModel: rowSelModel,
-		
         // grid columns
         columns:[
         /*{
@@ -967,12 +983,17 @@ Ext.onReady(function(){
         region: 'center',
         activeTab: 0,
         title:'Tabs',
+        collapsible: false,
+        split: true,
+        animFloat: false,
+        autoHide: false,
+        useSplitTips: true,  
         items: [grid,
                 fileBrowser
                 ],
-        viewConfig: {
+        /*viewConfig: {
             forceFit:true
-        },
+        },*/
         tbar: new Ext.Toolbar({
             width:1000,
             height:30,
@@ -988,6 +1009,7 @@ Ext.onReady(function(){
 });//End of ext.onReady()
 
 initialize = function() {
+
 	viewport = new Ext.Viewport({
         layout: 'border',
         items: [

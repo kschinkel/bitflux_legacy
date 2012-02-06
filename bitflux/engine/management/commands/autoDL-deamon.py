@@ -93,25 +93,28 @@ def newDLtoAdd(url, found_id, filename,found_season,found_episode,dl_dir,size):
     except TypeError:   #if type error occurs, just pass, use filename untouched
         pass
     #Create the new Job
-    new_job = Job()
-    new_job.status = 'Queued'
-    new_job.queue_id = len(Job.objects.all())
-    new_job.process_pid = -1
-    new_job.gid = -1
-    new_job.dl_speed = 0
-    new_job.time_seg_start = -1
-    new_job.time_seg_end = -1
-    new_job.display_size = common.convert_bytes(size)
-    new_job.total_size = size
-    new_job.dled_size = 0
-    new_job.full_url = url
-    new_job.local_directory = dl_dir
-    new_job.filename = common.name_wrapper(filename)
-    new_job.notes = "Auto DLed:  " + new_job.local_directory + new_job.filename
-    new_job.progress = 0;
-    new_job.eta = ""
-    new_job.save()
-    
+    try:
+        Job.objects.lock() 
+        new_job = Job()
+        new_job.status = 'Queued'
+        new_job.queue_id = len(Job.objects.all())
+        new_job.process_pid = -1
+        new_job.gid = -1
+        new_job.dl_speed = 0
+        new_job.time_seg_start = -1
+        new_job.time_seg_end = -1
+        new_job.display_size = common.convert_bytes(size)
+        new_job.total_size = size
+        new_job.dled_size = 0
+        new_job.full_url = url
+        new_job.local_directory = dl_dir
+        new_job.filename = common.name_wrapper(filename)
+        new_job.notes = "Auto DLed:  " + new_job.local_directory + new_job.filename
+        new_job.progress = 0;
+        new_job.eta = ""
+        new_job.save()
+    finally:
+        Job.objects.unlock()   
     #Create the new Log
     new_log = log()
     new_log.notes = 'Auto DLed'
@@ -159,19 +162,8 @@ def search_server_feed(full_torrent_listing):
                                 if URLS[0]["type"] == a_extension:
                                     file_type_wanted = True
                             if file_type_wanted:
-                                proper_show_name, proper_episode_name = common.get_espisode_info(a_show_name, season_found, episode_found)
-                                if len(proper_show_name) == 0:
-                                    #print "Show name could not be retrieved"
-                                    tv_show_rename = a_show_name
-                                else:
-                                     tv_show_rename = proper_show_name      
-                                        
-                                tv_show_rename += " S" + str(season_found).zfill(2)
-                                tv_show_rename += " E" + str(episode_found).zfill(2)
-                                
-                                if len(proper_episode_name) != 0:
-                                    tv_show_rename +=  " - " + proper_episode_name
-                                
+                                tv_show_rename = common.get_espisode_info(a_show_name, season_found, episode_found)
+                                #a_job.filename = common.name_wrapper(show_name)
                                 tv_show_rename += "." + URLS[0]["type"]
                                 log_to_file("Found Show to DL: "+tv_show_rename)
                                 #
